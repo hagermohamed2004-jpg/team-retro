@@ -8,35 +8,74 @@ window.WHP_CONFIG = {
   defaultSessionCode: 'TEAM-RETRO'
 };
 
-// Capture participant-private RPC metadata before online.js processes it.
-// The backend intentionally keeps assignments outside the shared state in some
-// responses; fixes.js merges only the current participant's assignment back in.
+// Keep participant-private assignment metadata available to fixes.js, and force
+// the Shared Screen to request public/shared data even when this browser also
+// contains a participant or facilitator login.
 (() => {
   const originalFetch = window.fetch.bind(window);
   window.__whpOriginalFetch = originalFetch;
   window.__whpPrivatePayload = null;
 
-  window.fetch = async (...args) => {
+  const isSharedContext = () => {
+    const query = new URLSearchParams(window.location.search);
+    return query.get('view') === 'shared' ||
+      window.location.hash === '#shared' ||
+      document.getElementById('screen-shared')?.classList.contains('active');
+  };
+
+  window.fetch = async (...inputArgs) => {
+    let args = [...inputArgs];
+    const requestUrl = String(args?.[0]?.url || args?.[0] || '');
+
+    if (/\/rest\/v1\/rpc\/whp_get_state(?:\?|$)/i.test(requestUrl) && isSharedContext()) {
+      const originalInit = args[1] || {};
+      try {
+        const body = typeof originalInit.body === 'string'
+          ? JSON.parse(originalInit.body)
+          : { ...(originalInit.body || {}) };
+        body.p_mode = 'shared';
+        body.p_token = null;
+        body.p_pin = null;
+        args[1] = { ...originalInit, body: JSON.stringify(body) };
+      } catch (_) {
+        // Leave the original request untouched if its body is not JSON.
+      }
+    }
+
     const response = await originalFetch(...args);
-    const url = String(args?.[0]?.url || args?.[0] || '');
-    if (/\/rest\/v1\/rpc\/(whp_join|whp_get_state|whp_participant_action)(?:\?|$)/i.test(url)) {
+    const finalUrl = String(args?.[0]?.url || args?.[0] || '');
+    if (/\/rest\/v1\/rpc\/(whp_join|whp_get_state|whp_participant_action)(?:\?|$)/i.test(finalUrl)) {
       response.clone().json().then(payload => {
         window.__whpPrivatePayload = payload;
         window.dispatchEvent(new CustomEvent('whp:private-payload', {
-          detail: { payload, url }
+          detail: { payload, url: finalUrl }
         }));
       }).catch(() => {});
     }
     return response;
   };
 
-  const loadFixes = () => {
-    if (document.querySelector('script[data-whp-fixes]')) return;
+  const appendScript = src => new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src^="${src.split('?')[0]}"]`);
+    if (existing) {
+      resolve();
+      return;
+    }
     const script = document.createElement('script');
-    script.src = './fixes.js?v=20260802-1';
+    script.src = src;
     script.async = false;
-    script.dataset.whpFixes = 'true';
+    script.onload = resolve;
+    script.onerror = reject;
     document.head.appendChild(script);
+  });
+
+  const loadFixes = async () => {
+    try {
+      await appendScript('./fixes.js?v=20260802-3');
+      await appendScript('./shared-results-fix.js?v=20260802-3');
+    } catch (error) {
+      console.error('Unable to load Team Retro fixes', error);
+    }
   };
 
   if (document.readyState === 'loading') {
