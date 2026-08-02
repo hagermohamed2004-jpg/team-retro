@@ -60,6 +60,10 @@
     );
     if (!participantId) return null;
 
+// The new shout-out system stores one or two recipients as an array.
+// two-shoutouts-fix.js handles these assignments.
+   const currentAssignment = payload?.state?.assignments?.[participantId];
+   if (Array.isArray(currentAssignment)) return null;
     const containers = [
       payload,
       payload.private,
@@ -359,7 +363,6 @@
 
   function install() {
     if (typeof state === 'undefined' || typeof renderParticipantHub !== 'function') return;
-    installWheelRepair();
     installFacilitatorInputRepair();
     installOptionalScanReasons();
     installSharedScanOrdering();
