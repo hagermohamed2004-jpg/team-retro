@@ -763,7 +763,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./config.js"></script>
+  <script src="./config.js?v=20260803-3"></script>
   <script>
     const STORAGE_KEY = 'webHighPerformanceSessionV1';
     const AVATAR_PACK_VERSION = 3;
@@ -1797,6 +1797,6 @@
     if(currentParticipantId && !getParticipant(currentParticipantId)){currentParticipantId=null;sessionStorage.removeItem('whpParticipantId');}
     if(window.location.hash==='#shared') setTimeout(()=>showSharedScreen(),0);
   </script>
-  <script src="./online.js"></script>
+   <script src="./online.js?v=20260803-3"></script>
 </body>
 </html>
