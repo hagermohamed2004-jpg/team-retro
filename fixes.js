@@ -60,10 +60,6 @@
     );
     if (!participantId) return null;
 
-// The new shout-out system stores one or two recipients as an array.
-// two-shoutouts-fix.js handles these assignments.
-   const currentAssignment = payload?.state?.assignments?.[participantId];
-   if (Array.isArray(currentAssignment)) return null;
     const containers = [
       payload,
       payload.private,
@@ -363,6 +359,8 @@
 
   function install() {
     if (typeof state === 'undefined' || typeof renderParticipantHub !== 'function') return;
+    // two-shoutouts-fix.js owns private wheel assignments and rendering.
+    // Running the older single-recipient repair here causes live rerenders while typing.
     installFacilitatorInputRepair();
     installOptionalScanReasons();
     installSharedScanOrdering();

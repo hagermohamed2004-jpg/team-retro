@@ -699,8 +699,8 @@
       </section>
 
       <section id="screen-avatar" class="screen">
-        <div class="page-title"><div><div class="eyebrow"></div><h2>Choose Your Character</h2><p>Choose a workplace-friendly animated character portrait. Your real name remains hidden on the shared screen.</p></div><span class="pill yellow">11 characters</span></div>
-        <div class="panel"><div id="avatar-grid" class="avatar-grid"></div><p class="avatar-source-note">Choose one character. <strong>Cartoon Avatar Pack v3:</strong> </p><div style="margin-top:18px"><button type="button" id="save-avatar-btn" class="btn-primary" onclick="saveParticipantAvatar()" disabled>Use This Avatar</button></div></div>
+        <div class="page-title"><div><div class="eyebrow">Cartoon Avatar Pack v3</div><h2>Choose Your Character</h2><p>Choose a workplace-friendly animated character portrait. Your real name remains hidden on the shared screen.</p></div><span class="pill yellow">11 characters</span></div>
+        <div class="panel"><div id="avatar-grid" class="avatar-grid"></div><div style="margin-top:18px"><button type="button" id="save-avatar-btn" class="btn-primary" onclick="saveParticipantAvatar()" disabled>Use This Avatar</button></div></div>
       </section>
 
       <section id="screen-participant-hub" class="screen">
@@ -763,7 +763,7 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./config.js?v=20260803-6"></script>
+  <script src="./config.js?v=20260803-8"></script>
   <script>
     const STORAGE_KEY = 'webHighPerformanceSessionV1';
     const AVATAR_PACK_VERSION = 3;
@@ -1797,6 +1797,6 @@
     if(currentParticipantId && !getParticipant(currentParticipantId)){currentParticipantId=null;sessionStorage.removeItem('whpParticipantId');}
     if(window.location.hash==='#shared') setTimeout(()=>showSharedScreen(),0);
   </script>
-    <script src="./online.js?v=20260803-4"></script>
+  <script src="./online.js?v=20260803-4"></script>
 </body>
 </html>

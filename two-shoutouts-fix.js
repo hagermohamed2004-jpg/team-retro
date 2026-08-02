@@ -318,20 +318,14 @@
     wheelState.timerId = setTimeout(() => {
       wheelState.timerId = null;
       wheelState.spun = false;
-wheelState.revealed = true;
-wheelState.formVisible = true;
-syncWheelMulti();
+      wheelState.revealed = true;
+      wheelState.formVisible = true;
+      syncWheelMulti();
 
-requestAnimationFrame(() => {
-  const form = document.getElementById('shoutout-form');
-
-  if (form) {
-    form.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  }
-});
+      requestAnimationFrame(() => {
+        const form = document.getElementById('shoutout-form');
+        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     }, wait);
   }
 
@@ -359,7 +353,15 @@ requestAnimationFrame(() => {
       form.classList.toggle('hidden', !wheelState.formVisible);
       for (const recipientId of pending) {
         const textarea = document.getElementById(`shoutout-text-${recipientId}`);
-        if (textarea && drafts[recipientId] != null) textarea.value = drafts[recipientId];
+        const draft = drafts[recipientId];
+        if (
+          textarea &&
+          document.activeElement !== textarea &&
+          draft != null &&
+          textarea.value !== draft
+        ) {
+          textarea.value = draft;
+        }
       }
       return;
     }
@@ -414,30 +416,56 @@ requestAnimationFrame(() => {
       ''
     );
     if (!participantId) return false;
+
     const raw = payload.state?.assignments?.[participantId];
     if (raw == null) return false;
+
     const ids = normaliseAssignment(raw);
+    const previousIds = normaliseAssignment(state.assignments?.[participantId]);
+    let changed = JSON.stringify(previousIds) !== JSON.stringify(ids);
+
     state.assignments = state.assignments || {};
     state.assignments[participantId] = ids;
 
-    const payloadParticipants = Array.isArray(payload.state?.participants) ? payload.state.participants : [];
-    const payloadIds = new Set(payloadParticipants.map(person => String(person?.id || '')).filter(Boolean));
+    const payloadParticipants = Array.isArray(payload.state?.participants)
+      ? payload.state.participants
+      : [];
+    const payloadIds = new Set(
+      payloadParticipants.map(person => String(person?.id || '')).filter(Boolean)
+    );
+
     state.participants = Array.isArray(state.participants) ? state.participants : [];
-    // fixes.js from older single-recipient builds may briefly create a synthetic
-    // participant whose ID is the two recipient IDs joined with a comma. Remove
-    // that placeholder before rendering the real two recipients.
+    const beforeFilterLength = state.participants.length;
     state.participants = state.participants.filter(person => {
       const id = String(person?.id || '');
       return !person?.privateAssignmentOnly || payloadIds.has(id) || ids.includes(id);
     });
+    if (state.participants.length !== beforeFilterLength) changed = true;
+
     for (const id of ids) {
       const incoming = payloadParticipants.find(person => String(person?.id) === id);
       if (!incoming) continue;
+
       const existing = state.participants.find(person => String(person?.id) === id);
-      if (existing) Object.assign(existing, incoming);
-      else state.participants.push({ ...incoming });
+      if (!existing) {
+        state.participants.push({ ...incoming });
+        changed = true;
+        continue;
+      }
+
+      const incomingName = String(incoming.name || '');
+      const incomingAvatar = incoming.avatarId || incoming.avatar_id || null;
+      if (incomingName && existing.name !== incomingName) {
+        existing.name = incomingName;
+        changed = true;
+      }
+      if (incomingAvatar && existing.avatarId !== incomingAvatar) {
+        existing.avatarId = incomingAvatar;
+        changed = true;
+      }
     }
-    return true;
+
+    return changed;
   }
 
   async function submitAllPendingShoutouts() {
@@ -615,7 +643,17 @@ requestAnimationFrame(() => {
     window.addEventListener('whp:private-payload', event => {
       setTimeout(() => {
         const repaired = repairAssignmentFromPayload(event.detail?.payload);
-        if (repaired && document.getElementById('screen-participant-hub')?.classList.contains('active')) {
+        const activeElement = document.activeElement;
+        const typingShoutout = Boolean(
+          activeElement &&
+          activeElement.matches?.('textarea[id^="shoutout-text-"], textarea#shoutout-text')
+        );
+
+        if (
+          repaired &&
+          !typingShoutout &&
+          document.getElementById('screen-participant-hub')?.classList.contains('active')
+        ) {
           renderParticipantHub();
         }
       }, 0);

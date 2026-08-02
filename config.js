@@ -71,9 +71,9 @@ window.WHP_CONFIG = {
 
   const loadFixes = async () => {
     try {
-      await appendScript('./fixes.js?v=20260803-6');
-await appendScript('./shared-results-fix.js?v=20260803-6');
-await appendScript('./two-shoutouts-fix.js?v=20260803-6');
+      await appendScript('./fixes.js?v=20260803-8');
+      await appendScript('./shared-results-fix.js?v=20260803-8');
+      await appendScript('./two-shoutouts-fix.js?v=20260803-8');
     } catch (error) {
       console.error('Unable to load Team Retro fixes', error);
     }
