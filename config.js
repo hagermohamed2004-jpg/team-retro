@@ -4,7 +4,7 @@
 // The publishable key is designed for browser apps. Never paste a secret key here.
 window.WHP_CONFIG = {
   supabaseUrl: 'https://vnawxioukgfofzaxygfb.supabase.co',
-  supabasePublishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYXd4aW91a2dmb2Z6YXh5Z2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNzE5NTQsImV4cCI6MjEwMDg0Nzk1NH0.E9JNzZhFaaS_1B0IKyRKe7MM1Pm3gIW4kyqmrDyLkrw',
+  supabasePublishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InZuYXd4aW91a2dmb2Z6YXh5Z2ZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNzE5NTQsImV4cCI6MjEwMDg0Nzk1NH0.E9JNzZhFaaS_1B0IKyRKe7MM1Pm3gIW4kyqmrDyLkrw',
   defaultSessionCode: 'TEAM-RETRO'
 };
 
@@ -71,8 +71,9 @@ window.WHP_CONFIG = {
 
   const loadFixes = async () => {
     try {
-      await appendScript('./fixes.js?v=20260802-3');
-      await appendScript('./shared-results-fix.js?v=20260802-3');
+      await appendScript('./fixes.js?v=20260802-4');
+      await appendScript('./shared-results-fix.js?v=20260802-4');
+      await appendScript('./two-shoutouts-fix.js?v=20260802-4');
     } catch (error) {
       console.error('Unable to load Team Retro fixes', error);
     }
