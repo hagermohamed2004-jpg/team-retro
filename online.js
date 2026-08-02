@@ -240,10 +240,13 @@
     }
 
     const newAssignment = currentParticipantId ? state?.assignments?.[currentParticipantId] : null;
-    if (previousAssignment && newAssignment !== previousAssignment && window.resetWheelLocalState) {
-      resetWheelLocalState();
-    }
-
+    if (
+  previousAssignment &&
+  !same(previousAssignment, newAssignment) &&
+  window.resetWheelLocalState
+) {
+  resetWheelLocalState();
+}
     updateHome();
 
     // Only rebuild the currently visible screen when its meaningful server data changed.
