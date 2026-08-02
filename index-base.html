@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web of High Performance — Live</title>
+  <style>
+    :root {
+      --red: #e62429;
+      --red-dark: #8e1117;
+      --blue: #1769aa;
+      --blue-dark: #0b2d4d;
+      --ink: #090b10;
+      --paper: #f8f6ee;
+      --yellow: #ffd447;
+      --green: #32c48d;
+      --orange: #ff8b3d;
+      --muted: #aeb6c3;
+      --panel: rgba(14, 18, 28, 0.94);
+      --border: rgba(255, 255, 255, 0.13);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+      --text-primary: #ffffff;
+      --text-secondary: #d9e2f2;
+      --text-muted: #aebbd0;
+      --surface-dark: #101522;
+      --surface-card: #182033;
+      --input-bg: #0d1320;
+      --input-text: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: auto; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-primary);
+      background:
+        radial-gradient(circle at 15% 15%, rgba(230,36,41,.28), transparent 25%),
+        radial-gradient(circle at 85% 10%, rgba(23,105,170,.28), transparent 25%),
+        linear-gradient(145deg, #07090d 0%, #111726 55%, #05070a 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .18;
+      background-image:
+        radial-gradient(circle, #fff 1px, transparent 1px),
+        linear-gradient(30deg, transparent 49%, rgba(255,255,255,.08) 50%, transparent 51%),
+        linear-gradient(-30deg, transparent 49%, rgba(255,255,255,.06) 50%, transparent 51%);
+      background-size: 10px 10px, 120px 120px, 120px 120px;
+      z-index: 0;
+    }
+
+    .web-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .18;
+    }
+
+    .app { position: relative; z-index: 1; min-height: 100vh; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6, 8, 13, .78);
+      backdrop-filter: blur(14px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: conic-gradient(from 45deg, var(--red), var(--blue), var(--red));
+      border: 2px solid rgba(255,255,255,.8);
+      box-shadow: 0 0 0 5px rgba(230,36,41,.12);
+      font-weight: 900;
+    }
+    .brand h1 { margin: 0; font-size: 1.05rem; letter-spacing: .06em; text-transform: uppercase; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: .78rem; }
+    .header-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+    button, input, textarea, select { font: inherit; }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.07); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--red), #ff555b); color: #fff; }
+    .btn-secondary { background: linear-gradient(135deg, var(--blue), #3a93d8); color: #fff; }
+    .btn-dark { background: #171c28; color: #fff; border: 1px solid var(--border); }
+    .btn-light { background: var(--paper); color: #111; }
+    .btn-danger { background: #5f1116; color: #fff; border: 1px solid rgba(255,255,255,.12); }
+    .btn-ghost { background: transparent; color: #fff; border: 1px solid var(--border); }
+    .btn-small { padding: 7px 10px; font-size: .82rem; border-radius: 9px; }
+
+    main { width: min(1240px, calc(100% - 28px)); margin: 28px auto 64px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .hero {
+      min-height: calc(100vh - 140px);
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 24px;
+      align-items: center;
+    }
+    .hero-card, .panel, .comic-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px);
+    }
+    .hero-card { padding: clamp(26px, 5vw, 58px); position: relative; overflow: hidden; }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      right: -120px; bottom: -160px;
+      border: 2px solid rgba(255,255,255,.15);
+      box-shadow: 0 0 0 40px rgba(255,255,255,.04), 0 0 0 85px rgba(255,255,255,.03);
+    }
+    .eyebrow { color: var(--yellow); text-transform: uppercase; letter-spacing: .16em; font-weight: 900; font-size: .78rem; }
+    .hero h2 { font-size: clamp(2.4rem, 6vw, 5.2rem); line-height: .92; margin: 14px 0 20px; text-transform: uppercase; max-width: 850px; }
+    .hero h2 span { color: var(--red); text-shadow: 4px 4px 0 rgba(23,105,170,.5); }
+    .hero p { color: #c9d0db; font-size: 1.06rem; max-width: 720px; line-height: 1.7; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
+
+    .mission-card { padding: 24px; }
+    .mission-card h3 { margin: 0 0 18px; font-size: 1.4rem; }
+    .mission-grid { display: grid; gap: 12px; }
+    .mission-item { padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,.035); }
+    .mission-item strong { display: block; color: var(--yellow); margin-bottom: 5px; }
+    .mission-item span { color: var(--muted); font-size: .9rem; }
+
+    .page-title { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; margin-bottom: 20px; }
+    .page-title h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); text-transform: uppercase; }
+    .page-title p { margin: 8px 0 0; color: var(--muted); }
+
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .tab { background: #151b27; color: #fff; border: 1px solid var(--border); }
+    .tab.active { background: linear-gradient(135deg, var(--red), var(--blue)); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .panel { padding: 20px; margin-bottom: 18px; }
+    .panel h3 { margin: 0 0 12px; }
+    .panel-sub { color: var(--muted); margin: -4px 0 16px; font-size: .9rem; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+
+    label { display: block; font-weight: 800; margin-bottom: 6px; color: var(--text-primary); }
+    .hint { color: var(--text-muted); font-size: .8rem; margin-top: 5px; }
+    input, textarea, select, button {
+      color: var(--input-text);
+    }
+    input, textarea, select {
+      width: 100%;
+      color: var(--input-text);
+      background: var(--input-bg);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 11px;
+      padding: 11px 12px;
+      outline: none;
+    }
+    input::placeholder, textarea::placeholder {
+      color: rgba(200, 210, 230, 0.55);
+    }
+    input:focus, textarea:focus, select:focus { border-color: #4fa7e8; box-shadow: 0 0 0 3px rgba(79,167,232,.12); }
+    textarea { min-height: 100px; resize: vertical; color: var(--input-text); background: var(--input-bg); }
+    select { color: var(--input-text); background: var(--input-bg); }
+    select option { color: #111; background: #fff; }
+    .field { margin-bottom: 14px; }
+
+    .toolbar { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+    .right { margin-left: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: left; vertical-align: top; }
+    th { color: var(--yellow); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+    td { color: #e6e9ef; }
+    .table-wrap { overflow-x: auto; }
+
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; font-size: .74rem; font-weight: 900; background: rgba(255,255,255,.08); border: 1px solid var(--border); }
+    .pill.red { background: rgba(230,36,41,.16); color: #ff9296; }
+    .pill.blue { background: rgba(23,105,170,.18); color: #92cff8; }
+    .pill.green { background: rgba(50,196,141,.16); color: #84efc2; }
+    .pill.yellow { background: rgba(255,212,71,.15); color: #ffe68d; }
+
+    .avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; }
+    .avatar-card {
+      background: #111721;
+      border: 2px solid transparent;
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .avatar-card:hover { border-color: rgba(255,255,255,.35); transform: translateY(-2px); }
+    .avatar-card.selected { border-color: var(--yellow); box-shadow: 0 0 0 4px rgba(255,212,71,.1); }
+    .avatar-mask {
+      --a: var(--red); --b: var(--blue);
+      width: 74px; height: 88px;
+      margin: 0 auto 9px;
+      position: relative;
+      border-radius: 48% 48% 44% 44% / 45% 45% 55% 55%;
+      background:
+        linear-gradient(28deg, transparent 47%, rgba(255,255,255,.13) 49%, transparent 51%),
+        linear-gradient(-28deg, transparent 47%, rgba(255,255,255,.13) 49%, transparent 51%),
+        linear-gradient(135deg, var(--a), var(--b));
+      border: 2px solid rgba(255,255,255,.55);
+      box-shadow: inset 0 0 18px rgba(0,0,0,.35), 0 8px 20px rgba(0,0,0,.25);
+    }
+    .avatar-mask::before, .avatar-mask::after {
+      content: "";
+      position: absolute;
+      width: 21px; height: 34px;
+      top: 25px;
+      background: #fff;
+      border: 3px solid #111;
+      clip-path: polygon(50% 0, 100% 100%, 0 80%);
+    }
+    .avatar-mask::before { left: 13px; transform: rotate(-8deg); }
+    .avatar-mask::after { right: 13px; transform: scaleX(-1) rotate(-8deg); }
+    .avatar-name { font-weight: 900; font-size: .9rem; }
+    .avatar-code { color: var(--muted); font-size: .72rem; margin-top: 3px; }
+    .avatar-picture {
+      width: 92px;
+      height: 92px;
+      display: block;
+      margin: 0 auto 10px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.78);
+      background: #090d15;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 0 0 5px rgba(255,255,255,.06);
+    }
+    .avatar-picture.mini-avatar {
+      width: 42px;
+      height: 42px;
+      display: inline-block;
+      vertical-align: middle;
+      margin: -4px 7px -4px 0;
+      border-width: 2px;
+      box-shadow: 0 4px 10px rgba(0,0,0,.3);
+    }
+
+    .avatar-card .avatar-picture {
+      width: 100%;
+      height: 154px;
+      margin: 0 auto 11px;
+      border-radius: 14px;
+      object-fit: cover;
+      object-position: var(--avatar-position, 50% 30%);
+      border: 2px solid rgba(255,255,255,.72);
+      background: #080b12;
+    }
+    .avatar-card .avatar-picture-fallback {
+      object-fit: cover;
+    }
+    .avatar-picture.mini-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .assignment-reveal .avatar-picture {
+      width: 128px;
+      height: 128px;
+      border-radius: 18px;
+      object-fit: cover;
+    }
+    .avatar-source-note {
+      margin-top: 16px;
+      color: #eaf2ff;
+      font-size: .85rem;
+      line-height: 1.55;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,212,71,.28);
+      background: rgba(255,212,71,.08);
+    }
+
+    .comic-card { padding: 18px; position: relative; overflow: hidden; }
+    .comic-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle, rgba(255,255,255,.07) 1px, transparent 1px);
+      background-size: 8px 8px;
+    }
+    .comic-card > * { position: relative; }
+
+    .wheel-wrap { display: grid; place-items: center; padding: 30px 10px; }
+    .wheel {
+      width: min(330px, 80vw); aspect-ratio: 1;
+      border-radius: 50%;
+      position: relative;
+      display: grid; place-items: center;
+      background: conic-gradient(var(--red) 0 20%, var(--blue) 20% 40%, #111 40% 60%, var(--red) 60% 80%, var(--blue) 80% 100%);
+      border: 8px solid #fff;
+      box-shadow: 0 0 0 10px rgba(230,36,41,.28), 0 20px 60px rgba(0,0,0,.5);
+      transition: transform 2.4s cubic-bezier(.1,.8,.15,1);
+    }
+    .wheel::after {
+      content: "";
+      width: 46%; height: 46%; border-radius: 50%;
+      position: absolute;
+      background: #0d111a;
+      border: 5px solid #fff;
+      box-shadow: inset 0 0 0 5px var(--red);
+    }
+    .wheel-stage { position: relative; display: grid; place-items: center; }
+    .wheel-label {
+      position: absolute;
+      z-index: 5;
+      width: 42%;
+      text-align: center;
+      font-weight: 950;
+      line-height: 1.15;
+      pointer-events: none;
+    }
+    .wheel-name {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 0;
+      height: 0;
+      z-index: 2;
+      transform: rotate(var(--angle)) translateY(-132px);
+      transform-origin: 0 0;
+    }
+    .wheel-name > span {
+      display: block;
+      width: 92px;
+      margin-left: -46px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      background: rgba(6,9,15,.82);
+      border: 1px solid rgba(255,255,255,.45);
+      color: #fff;
+      font-size: .68rem;
+      font-weight: 900;
+      line-height: 1.05;
+      text-align: center;
+      transform: rotate(var(--counter-angle));
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(0,0,0,.35);
+    }
+    .assignment-reveal {
+      max-width: 610px;
+      margin: 24px auto 0;
+      padding: 18px;
+      text-align: center;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(230,36,41,.22), rgba(23,105,170,.24));
+      border: 1px solid rgba(255,255,255,.22);
+      box-shadow: var(--shadow);
+    }
+    .assignment-reveal .avatar-picture { width: 112px; height: 112px; }
+    .assignment-reveal strong { display: block; margin-top: 8px; font-size: clamp(1.7rem, 5vw, 2.8rem); color: var(--yellow); }
+    .wheel-pointer {
+      width: 0; height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top: 34px solid var(--yellow);
+      filter: drop-shadow(0 4px 3px rgba(0,0,0,.5));
+      margin-bottom: -9px;
+      z-index: 3;
+    }
+
+    .rating-grid { display: grid; gap: 16px; }
+    .rating-card { background: rgba(255,255,255,.045); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+    .rating-card h4 { margin: 0 0 5px; }
+    .rating-card p { margin: 0 0 14px; color: var(--muted); font-size: .88rem; line-height: 1.45; }
+    .score-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 12px; }
+    .score-btn { background: #111824; color: #fff; border: 1px solid var(--border); padding: 12px 0; }
+    .score-btn.selected { background: linear-gradient(135deg, var(--red), var(--blue)); border-color: #fff; }
+    .sticky {
+      background: linear-gradient(145deg, #ffe97a, #ffd447);
+      color: #18140a;
+      border-radius: 4px 4px 12px 4px;
+      padding: 14px;
+      box-shadow: 6px 7px 0 rgba(0,0,0,.18);
+      transform: rotate(-.5deg);
+    }
+    .sticky textarea { background: rgba(255,255,255,.46); color: #18140a; border-color: rgba(0,0,0,.15); }
+    .sticky textarea::placeholder { color: rgba(24,20,10,.6); }
+
+    .meter { height: 12px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,.08); }
+    .meter > span { display: block; height: 100%; background: linear-gradient(90deg, var(--red), var(--yellow), var(--green)); border-radius: inherit; }
+    .meter-label { display: flex; justify-content: space-between; gap: 10px; font-size: .8rem; margin: 6px 0; color: var(--muted); }
+
+    .note-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px,1fr)); gap: 14px; }
+    .web-note {
+      min-height: 150px;
+      background: #edf5ff;
+      color: #0e1927;
+      border-radius: 18px 18px 6px 18px;
+      padding: 16px;
+      position: relative;
+      box-shadow: 8px 10px 0 rgba(0,0,0,.2);
+      border: 3px solid #111;
+    }
+    .web-note::after {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      right: 16px; top: 14px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 4px rgba(230,36,41,.15);
+    }
+    .web-note h4 { margin: 0 25px 8px 0; }
+    .web-note p { margin: 0; line-height: 1.45; }
+    .web-note .meta { margin-top: 12px; color: #516273; font-size: .76rem; }
+
+    .identity { color: #ffffff !important; -webkit-text-fill-color: #ffffff; }
+    .blurred { color: #ffffff !important; -webkit-text-fill-color: #ffffff; filter: blur(6px); user-select: none; opacity: .92; text-shadow: 0 0 8px currentColor; }
+    #screen-facilitator td, #screen-facilitator td span:not(.pill), #screen-facilitator [contenteditable="true"] { color: #ffffff; }
+    #screen-facilitator input, #screen-facilitator textarea, #screen-facilitator select { color: #ffffff; background-color: var(--input-bg); }
+    .identity { transition: .2s ease; color: #fff !important; font-weight: 850; }
+    .sticky .identity { color: #18140a !important; }
+    .web-note .identity { color: #0e1927 !important; }
+
+    .result-card { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 15px; padding: 15px; }
+    .result-card h4 { margin: 0 0 8px; }
+    .result-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .big-score { font-size: 1.9rem; font-weight: 950; color: var(--yellow); }
+
+    .progress-line { display: flex; align-items: center; gap: 12px; }
+    input[type="range"] { padding: 0; accent-color: var(--red); }
+
+    .phase-banner {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, rgba(230,36,41,.22), rgba(23,105,170,.22));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .phase-banner strong { text-transform: uppercase; letter-spacing: .08em; }
+    .phase-banner span { color: var(--muted); }
+
+    .hidden { display: none !important; }
+    .divider { height: 1px; background: rgba(255,255,255,.08); margin: 18px 0; }
+    .empty { padding: 22px; text-align: center; color: var(--muted); border: 1px dashed rgba(255,255,255,.15); border-radius: 14px; }
+    .danger-zone { border-color: rgba(230,36,41,.35); background: rgba(95,17,22,.18); }
+
+    .shared-stage {
+      min-height: calc(100vh - 110px);
+      padding: 10px 0 30px;
+    }
+    .shared-title { text-align: center; margin: 26px 0 24px; }
+    .shared-title h2 { margin: 0; font-size: clamp(2.3rem, 6vw, 5rem); text-transform: uppercase; }
+    .shared-title p { color: var(--muted); font-size: 1.1rem; }
+    .shared-count { text-align: center; font-size: 1.1rem; color: var(--yellow); font-weight: 900; margin: 12px 0 24px; }
+    .shared-nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 auto 22px;
+      padding: 10px;
+      width: fit-content;
+      max-width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(7,10,16,.82);
+      backdrop-filter: blur(10px);
+    }
+    .shared-instruction {
+      max-width: 900px;
+      margin: 0 auto 20px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      text-align: center;
+      color: #dbe4f0;
+      background: rgba(255,255,255,.045);
+      border: 1px solid var(--border);
+    }
+    .shared-scan-groups { display: grid; gap: 24px; }
+    .shared-scan-category-stack { display: grid; gap: 18px; }
+    .shared-scan-category {
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(145deg,rgba(24,32,51,.96),rgba(10,15,27,.96));
+      box-shadow: 0 18px 38px rgba(0,0,0,.24);
+    }
+    .shared-scan-summary {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) auto;
+      gap: 22px;
+      align-items: start;
+    }
+    .shared-scan-summary h4 { margin: 0 0 7px; font-size: 1.35rem; color: #fff; }
+    .shared-scan-description { margin: 0; color: var(--muted); line-height: 1.55; }
+    .shared-average {
+      min-width: 112px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      text-align: center;
+      color: #111827;
+      background: linear-gradient(145deg,#ffe97a,#ffc928);
+      box-shadow: 5px 6px 0 rgba(0,0,0,.22);
+    }
+    .shared-average strong { display: block; font-size: 2.25rem; line-height: 1; }
+    .shared-average span { display: block; margin-top: 5px; font-size: .78rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+    .shared-scan-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+    .shared-ticket-heading { margin: 20px 0 10px; color: #fff; font-size: .95rem; text-transform: uppercase; letter-spacing: .08em; }
+    .shared-ticket-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(230px,1fr));
+      gap: 13px;
+    }
+    .shared-reason-ticket {
+      position: relative;
+      min-height: 92px;
+      padding: 16px 16px 15px;
+      border-radius: 5px 5px 16px 5px;
+      color: #18140a;
+      background: linear-gradient(145deg,#fff08c,#ffd447);
+      box-shadow: 5px 6px 0 rgba(0,0,0,.18);
+      font-size: .96rem;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    .shared-reason-ticket::before {
+      content: 'ANONYMOUS NOTE';
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(24,20,10,.62);
+      font-size: .68rem;
+      font-weight: 1000;
+      letter-spacing: .09em;
+    }
+    .shared-no-reasons {
+      padding: 14px 16px;
+      border-radius: 13px;
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      border: 1px dashed rgba(255,255,255,.16);
+    }
+    @media (max-width: 680px) {
+      .shared-scan-summary { grid-template-columns: 1fr; }
+      .shared-average { width: 100%; }
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px; bottom: 18px;
+      z-index: 200;
+      background: #fff;
+      color: #111;
+      padding: 12px 16px;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      font-weight: 800;
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+    }
+    .toast.show { opacity: 1; transform: none; }
+
+    dialog {
+      width: min(520px, calc(100% - 24px));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      color: #fff;
+      background: #0d121c;
+      box-shadow: var(--shadow);
+      padding: 0;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(5px); }
+    .dialog-body { padding: 22px; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--border); }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid-4, .grid-3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .page-title { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 640px) {
+      header { padding: 13px 14px; }
+      .brand p { display: none; }
+      main { width: min(100% - 18px, 1240px); margin-top: 16px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .hero-card { padding: 28px 20px; }
+      .hero h2 { font-size: 2.45rem; }
+      .header-actions .btn-hide-mobile { display: none; }
+      .score-btn { padding: 10px 0; }
+    }
+
+    @media print {
+      header, .no-print, .web-bg { display: none !important; }
+      body { background: #fff; color: #111; }
+      body::before { display: none; }
+      .app, main { width: 100%; margin: 0; }
+      .panel, .comic-card, .result-card { background: #fff; color: #111; box-shadow: none; border: 1px solid #bbb; }
+      .shared-title p, .panel-sub, .meter-label { color: #444; }
+    }
+  </style>
+</head>
+<body>
+  <svg class="web-bg" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+    <g fill="none" stroke="white" stroke-width="1.4">
+      <circle cx="500" cy="500" r="120"/><circle cx="500" cy="500" r="220"/><circle cx="500" cy="500" r="330"/><circle cx="500" cy="500" r="455"/>
+      <path d="M500 0v1000M0 500h1000M140 140l720 720M860 140L140 860M300 0l400 1000M700 0L300 1000M0 300l1000 400M0 700l1000-400"/>
+    </g>
+  </svg>
+
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="brand-mark">WH</div>
+        <div>
+          <h1>Web of High Performance</h1>
+          <p>Live multi-device retrospective</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn-dark btn-small btn-hide-mobile" onclick="showScreen('home')">Home</button>
+        <button type="button" class="btn-dark btn-small" onclick="enterParticipantFlow()">Participant</button>
+        <button type="button" class="btn-secondary btn-small" onclick="openFacilitatorLogin()">Facilitator</button>
+        <button type="button" class="btn-primary btn-small" onclick="showSharedScreen()">Shared Screen</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="screen-home" class="screen active">
+        <div class="hero">
+          <div class="hero-card">
+            <div class="eyebrow">Spider-Man-inspired retrospective</div>
+            <h2>Build a stronger <span>team web</span>.</h2>
+            <p>A private, facilitator-controlled retrospective for shout-outs, anonymous team scans, broken webs, anonymous voting, web repairs, next missions, mission results and personal responsibility.</p>
+            <div class="hero-actions">
+              <button type="button" class="btn-primary" onclick="enterParticipantFlow()">Join Session</button>
+              <button type="button" class="btn-secondary" onclick="openFacilitatorLogin()">Facilitator Setup</button>
+              <button type="button" class="btn-light" onclick="showSharedScreen()">Open Shared Screen</button>
+            </div>
+          </div>
+          <div class="mission-card panel">
+            <h3 id="home-session-title">Create your retrospective</h3>
+            <div class="mission-grid">
+              <div class="mission-item"><strong>Shout-outs</strong><span>Controlled or random one-to-one assignments.</span></div>
+              <div class="mission-item"><strong>Team Scan</strong><span>Anonymous scores plus comic-style sticky-note reasons.</span></div>
+              <div class="mission-item"><strong>Broken Webs</strong><span>Anonymous problems and system issues.</span></div>
+              <div class="mission-item"><strong>Next Mission</strong><span>Manually add owners, dates, meters and mission results.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-participant-login" class="screen">
+        <div class="page-title">
+          <div><h2>Join the Session</h2><p>Your name is only used privately to load your activity and prevent duplicate submissions.</p></div>
+        </div>
+        <div class="panel" style="max-width:620px;margin-inline:auto;">
+          <form id="participant-login-form" onsubmit="event.preventDefault(); participantLogin();">
+            <div class="field"><label for="participant-name-input">Enter your exact name</label><input id="participant-name-input" name="participantName" autocomplete="name" autocapitalize="words" spellcheck="false" placeholder="Your name" /></div>
+            <button type="submit" id="participant-login-button" class="btn-primary">Continue</button>
+          </form>
+          <p class="hint">Names never appear on the shared screen. The facilitator can reveal identities only inside the protected dashboard.</p>
+        </div>
+      </section>
+
+      <section id="screen-avatar" class="screen">
+        <div class="page-title"><div><div class="eyebrow">Cartoon Avatar Pack v3</div><h2>Choose Your Character</h2><p>Choose a workplace-friendly animated character portrait. Your real name remains hidden on the shared screen.</p></div><span class="pill yellow">11 characters</span></div>
+        <div class="panel"><div id="avatar-grid" class="avatar-grid"></div><p class="avatar-source-note">Choose one character. <strong>Cartoon Avatar Pack v3:</strong> all portraits use the same workplace-friendly animated style and are embedded directly in this file.</p><div style="margin-top:18px"><button type="button" id="save-avatar-btn" class="btn-primary" onclick="saveParticipantAvatar()" disabled>Use This Avatar</button></div></div>
+      </section>
+
+      <section id="screen-participant-hub" class="screen">
+        <div class="page-title">
+          <div><div class="eyebrow" id="participant-alias"></div><h2>Mission Console</h2><p>Complete the currently open activities.</p></div>
+          <div class="toolbar"><button type="button" class="btn-secondary" onclick="changeParticipantAvatar()">Change Avatar</button><button type="button" class="btn-dark" onclick="participantLogout()">Leave Private Mode</button></div>
+        </div>
+        <div id="participant-phase-banner" class="phase-banner"></div>
+        <div id="participant-activity"></div>
+      </section>
+
+      <section id="screen-facilitator" class="screen">
+        <div class="page-title">
+          <div><h2>Facilitator Dashboard</h2><p>Protected controls, private identities, session content and activity management.</p></div>
+          <div class="toolbar"><span class="pill green" id="autosave-status">Connecting…</span><button type="button" class="btn-dark" onclick="setAllIdentities(true)">Reveal All Names</button><button type="button" class="btn-dark" onclick="setAllIdentities(false)">Blur All Names</button><button type="button" class="btn-dark" onclick="lockFacilitator()">Lock Dashboard</button></div>
+        </div>
+
+        <div class="tabs" id="facilitator-tabs">
+          <button type="button" class="tab active" data-tab="setup">Setup</button>
+          <button type="button" class="tab" data-tab="participants">Participants</button>
+          <button type="button" class="tab" data-tab="assignments">Shout-outs</button>
+          <button type="button" class="tab" data-tab="scan">Team Scan</button>
+          <button type="button" class="tab" data-tab="problems">Broken Webs</button>
+          <button type="button" class="tab" data-tab="missions">Missions</button>
+          <button type="button" class="tab" data-tab="results">Results</button>
+          <button type="button" class="tab" data-tab="data">Save & Export</button>
+        </div>
+
+        <div id="tab-setup" class="tab-panel active"></div>
+        <div id="tab-participants" class="tab-panel"></div>
+        <div id="tab-assignments" class="tab-panel"></div>
+        <div id="tab-scan" class="tab-panel"></div>
+        <div id="tab-problems" class="tab-panel"></div>
+        <div id="tab-missions" class="tab-panel"></div>
+        <div id="tab-results" class="tab-panel"></div>
+        <div id="tab-data" class="tab-panel"></div>
+      </section>
+
+      <section id="screen-shared" class="screen shared-stage">
+        <div class="shared-title"><div class="eyebrow" id="shared-phase-label">Current Mission</div><h2 id="shared-session-title">Web of High Performance</h2><p id="shared-session-subtitle"></p></div>
+        <div id="shared-content"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <dialog id="facilitator-login-dialog">
+    <div class="dialog-body">
+      <h3 style="margin-top:0">Facilitator Access</h3>
+      <div class="field"><label for="facilitator-pin-input">PIN</label><input id="facilitator-pin-input" type="password" inputmode="numeric" placeholder="Enter facilitator PIN" /></div>
+      <p class="hint">The default PIN for a new session is 2468. Change it in Setup.</p>
+    </div>
+    <div class="dialog-actions"><button type="button" class="btn-dark" onclick="closeDialog('facilitator-login-dialog')">Cancel</button><button type="button" class="btn-primary" onclick="facilitatorLogin()">Unlock</button></div>
+  </dialog>
+
+  <dialog id="confirm-dialog">
+    <div class="dialog-body"><h3 id="confirm-title" style="margin-top:0"></h3><p id="confirm-text" class="panel-sub"></p></div>
+    <div class="dialog-actions"><button type="button" class="btn-dark" onclick="resolveConfirm(false)">Cancel</button><button type="button" id="confirm-yes" class="btn-danger" onclick="resolveConfirm(true)">Confirm</button></div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script>
+    const STORAGE_KEY = 'webHighPerformanceSessionV1';
+    const AVATAR_PACK_VERSION = 3;
+    const avatarOptions = [
+      { id:"classic", name:"Spider-Man", code:"Peter Parker", kind:"spider", a:"#d72631", b:"#124e96", eye:"#ffffff", suit:"#cf1f2c" },
+      { id:"miles", name:"Miles Morales", code:"Miles Morales", kind:"miles", a:"#111318", b:"#cf2030", eye:"#ff4153", suit:"#111318" },
+      { id:"gwen", name:"Spider-Gwen", code:"Gwen Stacy", kind:"gwen", a:"#f5f7fb", b:"#ef5ca8", eye:"#ffffff", suit:"#f4f5f7" },
+      { id:"punk", name:"Spider-Punk", code:"Hobie Brown", kind:"punk", a:"#e6328a", b:"#273b91", eye:"#fff36d", suit:"#202229" },
+      { id:"miguel", name:"Spider-Man 2099", code:"Miguel O'Hara", kind:"miguel", a:"#08235a", b:"#d62235", eye:"#e93745", suit:"#071d4b" },
+      { id:"venom", name:"Venom", code:"Eddie Brock", kind:"venom", a:"#090b10", b:"#354052", eye:"#ffffff", suit:"#101218" },
+      { id:"goblin", name:"Green Goblin", code:"Norman Osborn", kind:"goblin", a:"#4f7d3d", b:"#5b2a7c", eye:"#f0f58a", suit:"#41245e" },
+      { id:"octopus", name:"Doctor Octopus", code:"Otto Octavius", kind:"octopus", a:"#42543c", b:"#2a3438", eye:"#dff9ff", suit:"#35433a" },
+      { id:"mysterio", name:"Mysterio", code:"Quentin Beck", kind:"mysterio", a:"#1c6650", b:"#7b4ba1", eye:"#efffff", suit:"#31584e" },
+      { id:"blackcat", name:"Black Cat", code:"Felicia Hardy", kind:"blackcat", a:"#15171d", b:"#7d8798", eye:"#bfe8ff", suit:"#1a1c22" },
+      { id:"spiderwoman", name:"Spider-Woman", code:"Jessica Drew", kind:"spiderwoman", a:"#a91f2d", b:"#e9b53c", eye:"#ffe88f", suit:"#a71c2b" }
+    ];
+
+    const defaultCategories = [
+      { id:uid(), group:'Foundations', name:'Commitment', description:'We make realistic commitments and support one another in completing them.' },
+      { id:uid(), group:'Foundations', name:'Focus', description:'We protect the iteration goal and prioritise finishing valuable work.' },
+      { id:uid(), group:'Foundations', name:'Openness', description:'We make risks, mistakes, blockers and disagreements visible early.' },
+      { id:uid(), group:'Foundations', name:'Respect', description:'We listen to different perspectives and treat one another’s contributions seriously.' },
+      { id:uid(), group:'Foundations', name:'Courage', description:'We raise difficult topics, challenge ideas constructively and ask for help.' },
+      { id:uid(), group:'High-performance behaviours', name:'Trust', description:'We can depend on one another and speak honestly without fear.' },
+      { id:uid(), group:'High-performance behaviours', name:'Constructive disagreement', description:'We can challenge ideas without attacking people or damaging relationships.' },
+      { id:uid(), group:'High-performance behaviours', name:'Shared ownership', description:'We own decisions, commitments, problems and outcomes together.' },
+      { id:uid(), group:'High-performance behaviours', name:'Self-organisation', description:'We make decisions close to the work without unnecessary waiting.' },
+      { id:uid(), group:'High-performance behaviours', name:'Collective problem-solving', description:'We solve difficult problems together rather than leaving them with one person.' }
+    ];
+
+    function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+    function clone(v){ return JSON.parse(JSON.stringify(v)); }
+    function esc(v=''){ return String(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+    function fmtDate(d){ if(!d) return '—'; try{return new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00'));}catch{return d;} }
+
+    function newState(){
+      return {
+        version:2,
+        settings:{
+          title:'Web of High Performance',
+          iteration:'',
+          date:new Date().toISOString().slice(0,10),
+          mission:'Build trust, improve communication and create space for new initiatives.',
+          pin:'2468',
+          phase:'closed',
+          voteLimit:3,
+          identityMode:'facilitator-confidential',
+          labels:{
+            shoutouts:'Shout-outs',
+            scan:'Team Scan',
+            foundations:'Foundations',
+            brokenWebs:'Broken Webs',
+            problemsSystem:'Problems in the System',
+            webRepairs:'Web Repairs',
+            nextMission:'Next Mission',
+            missionResults:'Mission Results',
+            responsibility:'Nervous Responsibility'
+          }
+        },
+        participants:[],
+        assignments:{},
+        categories:clone(defaultCategories),
+        scanResponses:[],
+        shoutouts:[],
+        problems:[],
+        votes:[],
+        repairs:[],
+        missions:[],
+        results:[],
+        responsibilities:[],
+        revealedShoutouts:[],
+        ui:{ sharedView:'overview' }
+      };
+    }
+
+    let state = loadState();
+    let facilitatorUnlocked = false;
+    let currentParticipantId = sessionStorage.getItem('whpParticipantId') || null;
+    let selectedAvatarId = null;
+    let confirmResolver = null;
+
+    // Temporary local UI state that must never be wiped by polling,
+    // server sync, page rerenders or realtime subscription updates.
+    const localUI = {
+      draftShoutout: '',
+      draftReasons: {},
+      draftProblem: { title: '', details: '', categoryId: '' },
+      draftResponsibility: '',
+      draftVoteSelection: [],
+      wheelSpun: false,
+      wheelResultVisible: false,
+      wheelFormVisible: false,
+      wheelRecipientId: null,
+      wheelRecipientName: '',
+      wheelRecipientAvatarId: null,
+      wheelFinalAngle: null,
+      wheelAnimationComplete: false,
+      wheelAnimationEndsAt: 0,
+      wheelTimerId: null,
+      scoreSelections: {},
+      participantNameTyping: '',
+      participantLoginPending: false,
+      skipNextRender: false,
+      // Facilitator-only temporary drafts across debounced renders:
+      facilitatorDraftInputs: {},
+      facilitatorNewParticipantName: ''
+    };
+
+    // Prevent duplicate listeners by marking handlers as attached.
+    const listenersAttached = new Set();
+
+    // Double-submit guard flag (used by both local and online submit wrappers.
+    let submitting_ = false;
+
+    // Expose helpers globally so the online adapter can call them.
+    window.localUI = localUI;
+    window.submitGuard = function(){ if(submitting_) return false; submitting_=true; return true; };
+    window.submitDone = function(){ submitting_=false; };
+    window.listenersAttached = listenersAttached;
+
+    function resetWheelLocalState(){
+      if(localUI.wheelTimerId){ clearTimeout(localUI.wheelTimerId); }
+      localUI.wheelTimerId = null;
+      localUI.wheelSpun = false;
+      localUI.wheelResultVisible = false;
+      localUI.wheelFormVisible = false;
+      localUI.wheelRecipientId = null;
+      localUI.wheelRecipientName = '';
+      localUI.wheelRecipientAvatarId = null;
+      localUI.wheelFinalAngle = null;
+      localUI.wheelAnimationComplete = false;
+      localUI.wheelAnimationEndsAt = 0;
+      localUI.draftShoutout = '';
+    }
+    window.resetWheelLocalState = resetWheelLocalState;
+
+    function resetParticipantLocalState(){
+      resetWheelLocalState();
+      localUI.draftReasons = {};
+      localUI.draftProblem = { title:'', details:'', categoryId:'' };
+      localUI.draftResponsibility = '';
+      localUI.draftVoteSelection = [];
+      localUI.scoreSelections = {};
+      localUI.participantLoginPending = false;
+    }
+    window.resetParticipantLocalState = resetParticipantLocalState;
+
+    function loadState(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return newState();
+        const parsed = JSON.parse(raw);
+        return migrateState(parsed);
+      } catch(e){ console.error(e); return newState(); }
+    }
+
+    function migrateState(s){
+      const fresh = newState();
+      const validAvatarIds = new Set(avatarOptions.map(a=>a.id));
+      const migratedParticipants = (s.participants||[]).map(p=>({
+        ...p,
+        avatarId: validAvatarIds.has(p.avatarId) ? p.avatarId : null
+      }));
+      return {
+        ...fresh,
+        ...s,
+        settings:{...fresh.settings,...(s.settings||{}),labels:{...fresh.settings.labels,...((s.settings||{}).labels||{})}},
+        assignments:s.assignments||{},
+        participants:migratedParticipants,
+        categories:(s.categories&&s.categories.length)?s.categories:fresh.categories,
+        scanResponses:s.scanResponses||[], shoutouts:s.shoutouts||[], problems:s.problems||[], votes:s.votes||[], repairs:s.repairs||[], missions:s.missions||[], results:s.results||[], responsibilities:s.responsibilities||[], revealedShoutouts:s.revealedShoutouts||[], ui:{...fresh.ui,...(s.ui||{})}
+      };
+    }
+
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const status=document.getElementById('autosave-status');
+      if(status){ status.textContent='Saved locally'; status.className='pill green'; setTimeout(()=>{status.textContent='Autosave on'; status.className='pill red';},1200); }
+      updateHome();
+      if(facilitatorUnlocked) renderFacilitator();
+      if(document.getElementById('screen-shared').classList.contains('active')) renderShared();
+    }
+
+    function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200); }
+
+    function showScreen(name,{ preserveScroll=false } = {}){
+      const alreadyActive = document.getElementById('screen-'+name)?.classList.contains('active');
+      document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+      const el=document.getElementById('screen-'+name); if(el) el.classList.add('active');
+      if(name==='facilitator'&&facilitatorUnlocked) renderFacilitator();
+      if(name==='shared') renderShared();
+      // Only scroll to top when moving between screens; keep scroll position during refreshes.
+      if(!alreadyActive && !preserveScroll){
+        try { window.scrollTo({top:0,behavior:'instant'}); } catch(e){}
+      }
+    }
+
+    function updateHome(){
+      document.getElementById('home-session-title').textContent = state.settings.title || 'Create your retrospective';
+    }
+
+    function openFacilitatorLogin(){
+      if(facilitatorUnlocked){ showScreen('facilitator'); return; }
+      document.getElementById('facilitator-pin-input').value='';
+      document.getElementById('facilitator-login-dialog').showModal();
+      setTimeout(()=>document.getElementById('facilitator-pin-input').focus(),50);
+    }
+    function facilitatorLogin(){
+      const pin=document.getElementById('facilitator-pin-input').value;
+      if(pin!==state.settings.pin){ toast('Incorrect PIN'); return; }
+      facilitatorUnlocked=true;
+      closeDialog('facilitator-login-dialog');
+      showScreen('facilitator');
+    }
+    function lockFacilitator(){ facilitatorUnlocked=false; showScreen('home'); toast('Facilitator dashboard locked'); }
+    function closeDialog(id){ const d=document.getElementById(id); if(d.open)d.close(); }
+
+    function askConfirm(title,text,yesLabel='Confirm'){
+      document.getElementById('confirm-title').textContent=title;
+      document.getElementById('confirm-text').textContent=text;
+      document.getElementById('confirm-yes').textContent=yesLabel;
+      document.getElementById('confirm-dialog').showModal();
+      return new Promise(resolve=>confirmResolver=resolve);
+    }
+    function resolveConfirm(v){ closeDialog('confirm-dialog'); if(confirmResolver){confirmResolver(v); confirmResolver=null;} }
+
+    if(!listenersAttached.has('facilitator-tabs')){
+      document.querySelectorAll('#facilitator-tabs .tab').forEach(btn=>btn.addEventListener('click',()=>{
+        document.querySelectorAll('#facilitator-tabs .tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+      }));
+      listenersAttached.add('facilitator-tabs');
+    }
+
+    function renderFacilitator(){
+      captureDraftsBeforeRerender();
+      renderSetupTab(); renderParticipantsTab(); renderAssignmentsTab(); renderScanTab(); renderProblemsTab(); renderMissionsTab(); renderResultsTab(); renderDataTab();
+      restoreDraftsAfterRerender();
+    }
+
+    function renderSetupTab(){
+      const s=state.settings;
+      document.getElementById('tab-setup').innerHTML=`
+        <div class="panel">
+          <h3>Session Details</h3><p class="panel-sub">Everything saves automatically in this browser.</p>
+          <div class="grid-2">
+            <div class="field"><label>Session title</label><input data-fac-draft="setting-title" value="${esc(s.title)}" onchange="updateSetting('title',this.value)"></div>
+            <div class="field"><label>Iteration / sprint</label><input data-fac-draft="setting-iteration" value="${esc(s.iteration)}" onchange="updateSetting('iteration',this.value)"></div>
+            <div class="field"><label>Date</label><input type="date" data-fac-draft="setting-date" value="${esc(s.date)}" onchange="updateSetting('date',this.value)"></div>
+            <div class="field"><label>Facilitator PIN</label><input data-fac-draft="setting-pin" value="${esc(s.pin)}" onchange="updateSetting('pin',this.value)"></div>
+          </div>
+          <div class="field"><label>Team mission</label><textarea data-fac-draft="setting-mission" onchange="updateSetting('mission',this.value)">${esc(s.mission)}</textarea></div>
+        </div>
+        <div class="panel">
+          <h3>Activity Labels</h3><p class="panel-sub">Your requested wording is preloaded. Edit any label here.</p>
+          <div class="grid-3">${Object.entries(s.labels).map(([k,v])=>`<div class="field"><label>${esc(labelTitle(k))}</label><input data-fac-draft="label-${k}" value="${esc(v)}" onchange="updateLabel('${k}',this.value)"></div>`).join('')}</div>
+        </div>
+        <div class="panel">
+          <h3>Open Activity</h3><p class="panel-sub">Participants only see the activity you open. Shared mode updates automatically.</p>
+          <div class="grid-4">${phaseButtons()}</div>
+        </div>
+        <div class="panel">
+          <h3>Shared Screen</h3>
+          <p class="panel-sub">Open this in a separate tab or window, then share only that tab in the meeting. It follows the activity you open automatically, and never shows real participant names.</p>
+          <div class="toolbar"><button class="btn-primary" onclick="openSharedWindow()">Open Shared Screen in New Tab</button><button class="btn-secondary" onclick="showSharedScreen()">Preview Here</button></div>
+          <div class="toolbar" style="margin-top:12px">${['overview','shoutouts','scan','problems','voting','missions','responsibility'].map(v=>`<button class="${state.ui.sharedView===v?'btn-primary':'btn-dark'} btn-small" onclick="setSharedView('${v}')">${sharedViewLabel(v)}</button>`).join('')}</div>
+        </div>
+        <div class="panel">
+          <h3>Privacy</h3>
+          <div class="grid-2">
+            <div class="field"><label>Identity handling</label><select onchange="updateSetting('identityMode',this.value)">
+              <option value="facilitator-confidential" ${s.identityMode==='facilitator-confidential'?'selected':''}>Confidential: facilitator can reveal</option>
+              <option value="fully-anonymous" ${s.identityMode==='fully-anonymous'?'selected':''}>Fully anonymous after submission</option>
+            </select><div class="hint">In confidential mode, identities stay blurred until you reveal them inside the protected dashboard.</div></div>
+            <div class="field"><label>Votes per participant</label><input type="number" min="1" max="10" value="${s.voteLimit}" onchange="updateSetting('voteLimit',Math.max(1,Number(this.value)||1))"></div>
+          </div>
+        </div>`;
+    }
+
+    function labelTitle(k){ return ({shoutouts:'Shout-outs',scan:'Team scan',foundations:'Foundations',brokenWebs:'Broken webs',problemsSystem:'Problems/system',webRepairs:'Initiatives',nextMission:'Actions',missionResults:'Outcomes',responsibility:'Personal commitment'})[k]||k; }
+    function phaseButtons(){
+      const phases=[['closed','Closed'],['shoutouts','Shout-outs'],['scan','Team Scan'],['problems','Broken Webs'],['voting','Anonymous Voting'],['responsibility','Nervous Responsibility']];
+      return phases.map(([id,name])=>`<button class="${state.settings.phase===id?'btn-primary':'btn-dark'}" onclick="setPhase('${id}')">${esc(name)}</button>`).join('');
+    }
+    function updateSetting(k,v){ state.settings[k]=v; saveState(); }
+    function updateLabel(k,v){ state.settings.labels[k]=v; saveState(); }
+    function setPhase(p){
+      state.settings.phase=p;
+      const sharedByPhase={closed:'overview',shoutouts:'shoutouts',scan:'scan',problems:'problems',voting:'voting',responsibility:'responsibility'};
+      if(sharedByPhase[p]) state.ui.sharedView=sharedByPhase[p];
+      saveState();
+      toast('Activity and shared screen updated');
+    }
+
+    function renderParticipantsTab(){
+      document.getElementById('tab-participants').innerHTML=`
+        <div class="panel">
+          <h3>Add Participants</h3><p class="panel-sub">Participants enter their exact name privately. Names never appear on the shared screen.</p>
+          <div class="toolbar"><input id="new-participant-name" placeholder="Participant name" style="max-width:360px" onkeydown="if(event.key==='Enter'){event.preventDefault();addParticipant();}" oninput="localUI.facilitatorNewParticipantName=this.value"><button class="btn-primary" onclick="addParticipant()">Add</button><button class="btn-secondary" onclick="bulkAddParticipants()">Paste List</button></div>
+        </div>
+        <div class="panel">
+          <div class="toolbar"><h3 style="margin:0">Participant List</h3><span class="pill blue">${state.participants.length} people</span></div>
+          <div class="table-wrap">${state.participants.length?`<table><thead><tr><th>Private identity</th><th>Avatar</th><th>Completed</th><th></th></tr></thead><tbody>${state.participants.map(p=>`<tr>
+            <td><span class="identity blurred" id="pname-${p.id}">${esc(p.name)}</span> <button class="btn-ghost btn-small" onclick="toggleIdentity('pname-${p.id}')">Reveal</button></td>
+            <td>${p.avatarId?avatarInline(p.avatarId):'<span class="pill">Not selected</span>'}</td>
+            <td>${participantCompletion(p)}</td>
+            <td><button class="btn-danger btn-small" onclick="removeParticipant('${p.id}')">Remove</button></td>
+          </tr>`).join('')}</tbody></table>`:'<div class="empty">No participants added yet.</div>'}</div>
+        </div>`;
+    }
+
+    function participantCompletion(p){
+      const parts=[];
+      if(state.shoutouts.some(x=>x.authorId===p.id||x.clientParticipantId===p.id))parts.push('Shout-out');
+      if(state.scanResponses.some(x=>x.participantId===p.id||x.clientParticipantId===p.id))parts.push('Scan');
+      if(state.problems.some(x=>x.authorId===p.id))parts.push('Problem');
+      if(state.votes.some(x=>x.participantId===p.id))parts.push('Vote');
+      if(state.responsibilities.some(x=>x.participantId===p.id))parts.push('Responsibility');
+      return parts.length?parts.map(x=>`<span class="pill green">${x}</span>`).join(' '):'<span class="pill">None</span>';
+    }
+
+    function addParticipant(){
+      const input=document.getElementById('new-participant-name'); const name=(input?input.value:localUI.facilitatorNewParticipantName||'').trim();
+      if(!name)return toast('Enter a name');
+      if(state.participants.some(p=>p.name.toLowerCase()===name.toLowerCase()))return toast('That participant already exists');
+      state.participants.push({id:uid(),name,avatarId:null,createdAt:Date.now()});
+      localUI.facilitatorNewParticipantName='';
+      if(input)input.value='';
+      saveState();
+    }
+    async function bulkAddParticipants(){
+      const list=prompt('Paste one name per line:'); if(!list)return;
+      list.split(/\n|,/).map(x=>x.trim()).filter(Boolean).forEach(name=>{
+        if(!state.participants.some(p=>p.name.toLowerCase()===name.toLowerCase()))state.participants.push({id:uid(),name,avatarId:null,createdAt:Date.now()});
+      }); saveState();
+    }
+    async function removeParticipant(id){
+      if(!(await askConfirm('Remove participant?','Their submissions and assignment will also be removed.','Remove')))return;
+      state.participants=state.participants.filter(p=>p.id!==id);
+      delete state.assignments[id];
+      Object.keys(state.assignments).forEach(k=>{if(state.assignments[k]===id)delete state.assignments[k];});
+      state.shoutouts=state.shoutouts.filter(x=>x.authorId!==id&&x.recipientId!==id);
+      state.scanResponses=state.scanResponses.filter(x=>x.participantId!==id);
+      state.problems=state.problems.filter(x=>x.authorId!==id);
+      state.votes=state.votes.filter(x=>x.participantId!==id);
+      state.responsibilities=state.responsibilities.filter(x=>x.participantId!==id);
+      saveState();
+    }
+    function toggleIdentity(id){ document.getElementById(id)?.classList.toggle('blurred'); }
+    function setAllIdentities(reveal){ document.querySelectorAll('#screen-facilitator .identity').forEach(el=>el.classList.toggle('blurred',!reveal)); }
+
+    function renderAssignmentsTab(){
+      const assignedRecipients=new Set(Object.values(state.assignments));
+      document.getElementById('tab-assignments').innerHTML=`
+        <div class="panel">
+          <h3>Prepare Shout-out Assignments</h3>
+          <p class="panel-sub">Choose specific recipients for selected people, then randomly fill the rest from recipients who have not already been used. Participants see the same animated wheel either way.</p>
+          <div class="toolbar"><button class="btn-secondary" onclick="fillRandomAssignments()">Randomly Fill Remaining</button><button class="btn-dark" onclick="clearAssignments()">Clear All</button><span class="pill ${Object.keys(state.assignments).length===state.participants.length&&state.participants.length?'green':'yellow'}">${Object.keys(state.assignments).length}/${state.participants.length} assigned</span></div>
+        </div>
+        <div class="panel">
+          ${state.participants.length<2?'<div class="empty">Add at least two participants.</div>':`<div class="table-wrap"><table><thead><tr><th>Participant</th><th>Assigned recipient</th><th>Status</th></tr></thead><tbody>${state.participants.map(p=>{
+            const current=state.assignments[p.id]||'';
+            return `<tr><td><span class="identity blurred" id="assign-name-${p.id}">${esc(p.name)}</span> <button class="btn-ghost btn-small" onclick="toggleIdentity('assign-name-${p.id}')">Reveal</button></td>
+            <td><select onchange="setAssignment('${p.id}',this.value)"><option value="">Choose or randomise later</option>${state.participants.filter(r=>r.id!==p.id).map(r=>`<option value="${r.id}" ${current===r.id?'selected':''} ${assignedRecipients.has(r.id)&&current!==r.id?'disabled':''}>${esc(r.name)}</option>`).join('')}</select></td>
+            <td>${current?'<span class="pill green">Ready</span>':'<span class="pill yellow">Pending</span>'}</td></tr>`;
+          }).join('')}</tbody></table></div>`}
+          <div class="hint" style="margin-top:14px">Each recipient can be assigned only once, and nobody can receive themselves.</div>
+        </div>
+        <div class="panel">
+          <h3>Submitted Shout-outs</h3>
+          ${renderShoutoutAdmin()}
+        </div>`;
+    }
+
+    function setAssignment(authorId,recipientId){
+      if(!recipientId){delete state.assignments[authorId]; saveState(); return;}
+      if(authorId===recipientId)return toast('A participant cannot receive themselves');
+      const duplicate=Object.entries(state.assignments).find(([a,r])=>r===recipientId&&a!==authorId);
+      if(duplicate)return toast('That recipient is already assigned');
+      state.assignments[authorId]=recipientId; saveState();
+    }
+    function fillRandomAssignments(){
+      if(state.participants.length<2)return toast('Add at least two participants');
+      const allIds=state.participants.map(p=>p.id);
+      const manual={...state.assignments};
+      const manualRecipients=Object.values(manual);
+      if(new Set(manualRecipients).size!==manualRecipients.length || Object.entries(manual).some(([a,r])=>a===r)){
+        toast('Fix the manual assignments first'); return;
+      }
+      const authors=shuffle(allIds.filter(id=>!manual[id]));
+      const available=shuffle(allIds.filter(id=>!manualRecipients.includes(id)));
+      const solution={...manual};
+
+      function assignAt(index, remaining){
+        if(index===authors.length)return true;
+        const author=authors[index];
+        const candidates=shuffle(remaining.filter(r=>r!==author));
+        for(const recipient of candidates){
+          solution[author]=recipient;
+          if(assignAt(index+1,remaining.filter(r=>r!==recipient)))return true;
+          delete solution[author];
+        }
+        return false;
+      }
+
+      if(!assignAt(0,available)){
+        state.assignments=manual;
+        saveState();
+        toast('The manual choices leave no valid random assignment. Change one chosen pair and try again.');
+        return;
+      }
+      state.assignments=solution;
+      saveState(); toast('Remaining assignments filled');
+    }
+    function clearAssignments(){ state.assignments={}; saveState(); }
+    function shuffle(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+
+    function renderShoutoutAdmin(){
+      if(!state.shoutouts.length)return '<div class="empty">No shout-outs submitted yet.</div>';
+      return `<div class="note-grid">${state.shoutouts.map(x=>{
+        const author=getParticipant(x.authorId), recipient=getParticipant(x.recipientId);
+        const revealed=state.revealedShoutouts.includes(x.id);
+        return `<div class="web-note"><h4>For ${recipient?esc(recipient.name):'Unknown'}</h4><p>${esc(x.text)}</p><div class="meta">Writer: <span class="identity blurred" id="writer-${x.id}">${author?esc(author.name):'Unknown'}</span> <button class="btn-ghost btn-small" onclick="toggleIdentity('writer-${x.id}')">Reveal privately</button></div><div class="toolbar" style="margin-top:10px"><button class="btn-secondary btn-small" onclick="toggleShoutoutWriter('${x.id}')">${revealed?'Hide writer avatar on shared screen':'Reveal writer avatar on shared screen'}</button></div></div>`;
+      }).join('')}</div>`;
+    }
+    function toggleShoutoutWriter(id){
+      state.revealedShoutouts=state.revealedShoutouts.includes(id)?state.revealedShoutouts.filter(x=>x!==id):[...state.revealedShoutouts,id];
+      saveState();
+    }
+
+    function renderScanTab(){
+      document.getElementById('tab-scan').innerHTML=`
+        <div class="panel"><div class="toolbar"><div><h3 style="margin:0">Assessment Categories</h3><p class="panel-sub">Participants score each category from 1 to 5 and add a reason on a sticky note.</p></div><button class="btn-primary right" onclick="addCategory()">Add Category</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Group</th><th>Category</th><th>Description</th><th></th></tr></thead><tbody>${state.categories.map(c=>`<tr><td><input value="${esc(c.group)}" onchange="editCategory('${c.id}','group',this.value)"></td><td><input value="${esc(c.name)}" onchange="editCategory('${c.id}','name',this.value)"></td><td><textarea style="min-height:70px" onchange="editCategory('${c.id}','description',this.value)">${esc(c.description)}</textarea></td><td><button class="btn-danger btn-small" onclick="removeCategory('${c.id}')">Remove</button></td></tr>`).join('')}</tbody></table></div>
+        </div>
+        <div class="panel"><h3>Team Scan Results</h3>${renderScanAdminResults()}</div>`;
+    }
+    function addCategory(){ state.categories.push({id:uid(),group:'Foundations',name:'New category',description:'Describe the observable behaviour.'}); saveState(); }
+    function editCategory(id,k,v){ const c=state.categories.find(x=>x.id===id); if(c)c[k]=v; saveState(); }
+    async function removeCategory(id){ if(!(await askConfirm('Remove category?','Existing responses for this category will also be removed.','Remove')))return; state.categories=state.categories.filter(c=>c.id!==id); state.scanResponses.forEach(r=>delete r.answers[id]); saveState(); }
+
+    function renderScanAdminResults(){
+      if(!state.scanResponses.length)return '<div class="empty">No team scan responses yet.</div>';
+      return `<div class="grid-2">${state.categories.map(c=>{
+        const vals=state.scanResponses.map(r=>r.answers[c.id]?.score).filter(Boolean); if(!vals.length)return '';
+        const avg=vals.reduce((a,b)=>a+b,0)/vals.length, range=Math.max(...vals)-Math.min(...vals);
+        const reasons=state.scanResponses.map(r=>({participantId:r.participantId,text:r.answers[c.id]?.reason})).filter(x=>x.text);
+        return `<div class="result-card"><div class="result-top"><div><span class="pill blue">${esc(c.group)}</span><h4>${esc(c.name)}</h4></div><div class="big-score">${avg.toFixed(1)}</div></div>
+        <div class="meter"><span style="width:${avg/5*100}%"></span></div><div class="meter-label"><span>${vals.length} responses</span><span>Range ${range}</span></div>
+        <details><summary>Reasons (${reasons.length})</summary><div style="margin-top:10px">${reasons.map((r,i)=>`<div class="sticky" style="margin-bottom:10px;transform:rotate(${i%2?'.5':'-.5'}deg)"><div>${esc(r.text)}</div>${state.settings.identityMode==='facilitator-confidential'?`<div class="hint" style="color:#5d4c10;margin-top:8px">From: <span class="identity blurred" id="scanid-${c.id}-${i}">${esc(getParticipant(r.participantId)?.name||'Unknown')}</span> <button class="btn-small" onclick="toggleIdentity('scanid-${c.id}-${i}')">Reveal</button></div>`:''}</div>`).join('')}</div></details></div>`;
+      }).join('')}</div>`;
+    }
+
+    function renderProblemsTab(){
+      document.getElementById('tab-problems').innerHTML=`
+        <div class="panel"><div class="toolbar"><div><h3 style="margin:0">${esc(state.settings.labels.brokenWebs)}</h3><p class="panel-sub">Anonymous problems and issues in the system. Edit wording, merge manually or convert into a web repair.</p></div><span class="pill blue right">${state.problems.length} topics</span></div>
+        ${state.problems.length?`<div class="note-grid">${state.problems.map(p=>`<div class="web-note"><h4 contenteditable="true" onblur="editProblem('${p.id}','title',this.innerText)">${esc(p.title)}</h4><p contenteditable="true" onblur="editProblem('${p.id}','details',this.innerText)">${esc(p.details)}</p><div class="meta">Category: ${esc(getCategory(p.categoryId)?.name||'General')} · Votes: ${voteCount(p.id)}</div>${state.settings.identityMode==='facilitator-confidential'?`<div class="meta">Author: <span class="identity blurred" id="problem-author-${p.id}">${esc(getParticipant(p.authorId)?.name||'Unknown')}</span> <button class="btn-ghost btn-small" onclick="toggleIdentity('problem-author-${p.id}')">Reveal</button></div>`:''}<div class="toolbar" style="margin-top:12px"><button class="btn-secondary btn-small" onclick="convertProblemToRepair('${p.id}')">Convert to Web Repair</button><button class="btn-danger btn-small" onclick="removeProblem('${p.id}')">Remove</button></div></div>`).join('')}</div>`:'<div class="empty">No broken webs submitted yet.</div>'}</div>
+        <div class="panel"><h3>Voting Controls</h3><p class="panel-sub">Voting is anonymous on the shared screen. Ballot identities are blurred here until you deliberately reveal them.</p><div class="toolbar"><button class="btn-primary" onclick="setPhase('voting')">Open Voting</button><button class="btn-dark" onclick="clearVotes()">Clear Votes</button><span class="pill yellow">${state.votes.length} ballots</span></div>
+        ${state.votes.length?`<details style="margin-top:16px"><summary>Confidential ballot audit</summary><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Participant</th><th>Selected topics</th></tr></thead><tbody>${state.votes.map((v,i)=>`<tr><td><span class="identity blurred" id="vote-author-${v.id}">${esc(getParticipant(v.participantId||v.clientParticipantId)?.name||'Anonymous')}</span> <button class="btn-ghost btn-small" onclick="toggleIdentity('vote-author-${v.id}')">Reveal</button></td><td>${v.problemIds.map(id=>`<span class="pill blue">${esc(state.problems.find(p=>p.id===id)?.title||'Removed topic')}</span>`).join(' ')}</td></tr>`).join('')}</tbody></table></div></details>`:''}</div>`;
+    }
+    function editProblem(id,k,v){ const p=state.problems.find(x=>x.id===id); if(p)p[k]=v.trim(); saveState(); }
+    function removeProblem(id){ state.problems=state.problems.filter(p=>p.id!==id); state.votes.forEach(v=>v.problemIds=v.problemIds.filter(x=>x!==id)); saveState(); }
+    function voteCount(problemId){ return state.votes.reduce((n,v)=>n+v.problemIds.filter(x=>x===problemId).length,0); }
+    function clearVotes(){ state.votes=[]; saveState(); }
+    function convertProblemToRepair(id){ const p=state.problems.find(x=>x.id===id); if(!p)return; state.repairs.push({id:uid(),title:p.title,details:p.details,categoryId:p.categoryId,startDate:state.settings.date,dueDate:'',progress:0,status:'Not started',ownerParticipantId:'',sourceProblemId:id}); saveState(); toast('Added to Web Repairs'); }
+
+    function renderMissionsTab(){
+      document.getElementById('tab-missions').innerHTML=`
+        <div class="panel"><div class="toolbar"><h3 style="margin:0">${esc(state.settings.labels.webRepairs)}</h3><button class="btn-primary right" onclick="addRepair()">Add Web Repair</button></div>${renderRepairEditor()}</div>
+        <div class="panel"><div class="toolbar"><h3 style="margin:0">${esc(state.settings.labels.nextMission)}</h3><button class="btn-primary right" onclick="addMission()">Add Next Mission</button></div>${renderMissionEditor()}</div>
+        <div class="panel"><div class="toolbar"><h3 style="margin:0">${esc(state.settings.labels.missionResults)}</h3><button class="btn-primary right" onclick="addResult()">Add Mission Result</button></div>${renderResultEditor()}</div>`;
+    }
+
+    function renderRepairEditor(){ if(!state.repairs.length)return '<div class="empty">No web repairs yet.</div>'; return `<div class="grid-2">${state.repairs.map(r=>missionEditorCard('repair',r)).join('')}</div>`; }
+    function renderMissionEditor(){ if(!state.missions.length)return '<div class="empty">No next missions yet.</div>'; return `<div class="grid-2">${state.missions.map(r=>missionEditorCard('mission',r)).join('')}</div>`; }
+    function renderResultEditor(){ if(!state.results.length)return '<div class="empty">No mission results yet.</div>'; return `<div class="grid-2">${state.results.map(r=>missionEditorCard('result',r)).join('')}</div>`; }
+
+    function missionEditorCard(type,r){
+      const collection=type==='repair'?'repairs':type==='mission'?'missions':'results';
+      return `<div class="result-card"><div class="field"><label>Title</label><input value="${esc(r.title||'')}" onchange="editMissionItem('${collection}','${r.id}','title',this.value)"></div>
+      <div class="field"><label>Details / recommendation</label><textarea onchange="editMissionItem('${collection}','${r.id}','details',this.value)">${esc(r.details||'')}</textarea></div>
+      <div class="grid-2"><div class="field"><label>Start / baseline date</label><input type="date" value="${esc(r.startDate||'')}" onchange="editMissionItem('${collection}','${r.id}','startDate',this.value)"></div><div class="field"><label>Target / review date</label><input type="date" value="${esc(r.dueDate||'')}" onchange="editMissionItem('${collection}','${r.id}','dueDate',this.value)"></div></div>
+      <div class="field"><label>Owner avatar</label><select onchange="editMissionItem('${collection}','${r.id}','ownerParticipantId',this.value)"><option value="">No owner</option>${state.participants.map(p=>`<option value="${p.id}" ${r.ownerParticipantId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><div class="hint">Only the avatar appears on the shared screen.</div></div>
+      <div class="field"><label>Progress: ${Number(r.progress||0)}%</label><input type="range" min="0" max="100" step="5" value="${Number(r.progress||0)}" oninput="this.previousElementSibling.textContent='Progress: '+this.value+'%'" onchange="editMissionItem('${collection}','${r.id}','progress',Number(this.value))"></div>
+      <div class="grid-2"><div class="field"><label>Status</label><select onchange="editMissionItem('${collection}','${r.id}','status',this.value)">${['Not started','In progress','At risk','Completed','Continue next iteration','Learning captured'].map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field"><label>Result / measurement</label><input value="${esc(r.measurement||'')}" onchange="editMissionItem('${collection}','${r.id}','measurement',this.value)" placeholder="What evidence will show progress?"></div></div>
+      <button class="btn-danger btn-small" onclick="removeMissionItem('${collection}','${r.id}')">Remove</button></div>`;
+    }
+    function addRepair(){ state.repairs.push({id:uid(),title:'New web repair',details:'',categoryId:'',startDate:state.settings.date,dueDate:'',progress:0,status:'Not started',ownerParticipantId:'',measurement:''}); saveState(); }
+    function addMission(){ state.missions.push({id:uid(),title:'New next mission',details:'',startDate:state.settings.date,dueDate:'',progress:0,status:'Not started',ownerParticipantId:'',measurement:''}); saveState(); }
+    function addResult(){ state.results.push({id:uid(),title:'New mission result',details:'',startDate:state.settings.date,dueDate:'',progress:0,status:'Not started',ownerParticipantId:'',measurement:''}); saveState(); }
+    function editMissionItem(collection,id,k,v){ const item=state[collection].find(x=>x.id===id); if(item)item[k]=v; saveState(); }
+    function removeMissionItem(collection,id){ state[collection]=state[collection].filter(x=>x.id!==id); saveState(); }
+
+    function renderResultsTab(){
+      document.getElementById('tab-results').innerHTML=`
+        <div class="panel"><h3>Overview</h3><div class="grid-4">
+          ${metricCard(state.shoutouts.length,'Shout-outs','submitted')}
+          ${metricCard(state.scanResponses.length,'Team scans','completed')}
+          ${metricCard(state.problems.length,'Broken webs','submitted')}
+          ${metricCard(state.votes.length,'Ballots','cast')}
+        </div></div>
+        <div class="panel"><div class="toolbar"><h3 style="margin:0">Personal Commitments</h3><span class="pill blue right">${state.responsibilities.length}</span></div>
+        ${state.responsibilities.length?`<div class="note-grid">${state.responsibilities.map(r=>`<div class="web-note"><h4>${avatarInline(getParticipant(r.participantId)?.avatarId)}</h4><p>${esc(r.text)}</p><div class="meta">Shared by avatar only</div></div>`).join('')}</div>`:'<div class="empty">No personal commitments yet.</div>'}</div>
+        <div class="panel"><h3>Presentation Controls</h3><div class="toolbar">${['overview','shoutouts','scan','problems','voting','missions','responsibility'].map(v=>`<button class="${state.ui.sharedView===v?'btn-primary':'btn-dark'}" onclick="setSharedView('${v}')">${sharedViewLabel(v)}</button>`).join('')}</div></div>`;
+    }
+    function metricCard(n,title,sub){ return `<div class="result-card"><div class="big-score">${n}</div><h4>${title}</h4><div class="panel-sub">${sub}</div></div>`; }
+    function sharedViewLabel(v){return ({overview:'Overview',shoutouts:'Shout-outs',scan:'Team Scan',problems:'Broken Webs',voting:'Voting Results',missions:'Missions',responsibility:'Responsibility'})[v]||v;}
+    function setSharedView(v){state.ui.sharedView=v;saveState();}
+
+    function renderDataTab(){
+      document.getElementById('tab-data').innerHTML=`
+        <div class="panel"><h3>Save and Move the Session</h3><p class="panel-sub">The current session already persists in this browser through local storage.</p><div class="toolbar"><button class="btn-primary" onclick="exportSession()">Export Session JSON</button><label class="btn-secondary" style="cursor:pointer">Import Session JSON<input type="file" accept="application/json" style="display:none" onchange="importSession(event)"></label><button class="btn-light" onclick="window.print()">Print Current View</button></div></div>
+        <div class="panel danger-zone"><h3>Reset</h3><p class="panel-sub">This permanently clears the locally saved session unless you export it first.</p><button class="btn-danger" onclick="resetSession()">Reset Entire Session</button></div>`;
+    }
+    function exportSession(){ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`${(state.settings.title||'retrospective').replace(/[^a-z0-9]+/gi,'-').toLowerCase()}-${state.settings.date||'session'}.json`; a.click(); URL.revokeObjectURL(url); }
+    function importSession(e){ const file=e.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=()=>{try{state=migrateState(JSON.parse(reader.result));saveState();toast('Session imported');}catch{toast('Invalid session file');}}; reader.readAsText(file); }
+    async function resetSession(){ if(!(await askConfirm('Reset the entire session?','Export first if you may need the data later. This cannot be undone.','Reset')))return; state=newState(); localStorage.removeItem(STORAGE_KEY); currentParticipantId=null;sessionStorage.removeItem('whpParticipantId');saveState();showScreen('home');toast('Session reset'); }
+
+    function enterParticipantFlow(){
+      if(!state.participants.length){ toast('The facilitator must add participants first'); return; }
+      if(currentParticipantId && getParticipant(currentParticipantId)){ renderParticipantHub(); showScreen('participant-hub'); }
+      else {
+        showScreen('participant-login');
+        const input=document.getElementById('participant-name-input');
+        if(input){
+          if(localUI.participantNameTyping) input.value=localUI.participantNameTyping;
+          requestAnimationFrame(()=>{ try{ input.focus({preventScroll:true}); }catch(_){ input.focus(); } });
+        }
+      }
+    }
+    function participantLogin(){
+      if(localUI.participantLoginPending) return;
+      const input=document.getElementById('participant-name-input');
+      const name=(input?.value || localUI.participantNameTyping || '').trim();
+      localUI.participantNameTyping=name;
+      if(!name){toast('Enter your name.');return;}
+      const p=state.participants.find(x=>(x.name||'').toLowerCase()===name.toLowerCase());
+      if(!p){toast('Name not recognised. Enter the exact name given to the facilitator.');return;}
+      currentParticipantId=p.id; sessionStorage.setItem('whpParticipantId',p.id);
+      resetWheelLocalState();
+      if(!p.avatarId){ renderAvatarSelection(); showScreen('avatar'); }
+      else { renderParticipantHub(); showScreen('participant-hub'); }
+    }
+    function changeParticipantAvatar(){ renderAvatarSelection(); const p=getParticipant(currentParticipantId); if(p?.avatarId){ selectedAvatarId=p.avatarId; setTimeout(()=>{ const card=document.getElementById('avatar-card-'+p.avatarId); if(card){card.classList.add('selected'); document.getElementById('save-avatar-btn').disabled=false;} },0); } showScreen('avatar'); }
+    function participantLogout(){
+      currentParticipantId=null;
+      sessionStorage.removeItem('whpParticipantId');
+      resetParticipantLocalState();
+      localUI.participantNameTyping='';
+      const input=document.getElementById('participant-name-input'); if(input) input.value='';
+      showScreen('home');
+    }
+
+    function renderAvatarSelection(){
+      selectedAvatarId=null;
+      document.getElementById('avatar-grid').innerHTML=avatarOptions.map(a=>avatarCard(a)).join('');
+      document.getElementById('save-avatar-btn').disabled=true;
+    }
+    function avatarCard(a){return `<div class="avatar-card" id="avatar-card-${a.id}" onclick="selectAvatar('${a.id}')">${avatarImage(a.id,'avatar-picture')}<div class="avatar-name">${esc(a.name)}</div><div class="avatar-code">${esc(a.code)}</div></div>`;}
+    function selectAvatar(id){ selectedAvatarId=id; document.querySelectorAll('.avatar-card').forEach(x=>x.classList.remove('selected')); document.getElementById('avatar-card-'+id).classList.add('selected'); document.getElementById('save-avatar-btn').disabled=false; }
+    function saveParticipantAvatar(){ const p=getParticipant(currentParticipantId); if(!p||!selectedAvatarId)return; const used=state.participants.find(x=>x.avatarId===selectedAvatarId&&x.id!==p.id); if(used){toast('That avatar is already taken. Choose another.');return;} p.avatarId=selectedAvatarId; saveState(); renderParticipantHub(); showScreen('participant-hub'); }
+
+    function captureDraftsBeforeRerender(){
+      const st = document.getElementById('shoutout-text');
+      if(st && !st.disabled){ localUI.draftShoutout = st.value; }
+      state.categories.forEach(c=>{
+        const r = document.getElementById('reason-'+c.id);
+        if(r){ localUI.draftReasons[c.id] = r.value; }
+        const s = document.getElementById('score-'+c.id);
+        if(s && s.value){ localUI.scoreSelections[c.id] = s.value; }
+      });
+      const pt = document.getElementById('problem-title');
+      if(pt){ localUI.draftProblem.title = pt.value; }
+      const pd = document.getElementById('problem-details');
+      if(pd){ localUI.draftProblem.details = pd.value; }
+      const pc = document.getElementById('problem-category');
+      if(pc){ localUI.draftProblem.categoryId = pc.value; }
+      const rt = document.getElementById('responsibility-text');
+      if(rt){ localUI.draftResponsibility = rt.value; }
+      const voteChecks = [...document.querySelectorAll('.vote-check')];
+      if(voteChecks.length){ localUI.draftVoteSelection = voteChecks.filter(x=>x.checked).map(x=>x.value); }
+      // Facilitator dashboard temporary drafts:
+      const addNameInput = document.getElementById('new-participant-name');
+      if(addNameInput){ localUI.facilitatorNewParticipantName = addNameInput.value; }
+      const facInputs = [...document.querySelectorAll('[data-fac-draft]')];
+      facInputs.forEach(el => {
+        const k = el.getAttribute('data-fac-draft');
+        if(k && (el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.tagName==='SELECT')){
+          localUI.facilitatorDraftInputs[k] = el.value;
+        }
+      });
+    }
+
+    function restoreDraftsAfterRerender(){
+      const st = document.getElementById('shoutout-text');
+      if(st && !st.disabled && localUI.draftShoutout){ st.value = localUI.draftShoutout; }
+      state.categories.forEach(c=>{
+        const r = document.getElementById('reason-'+c.id);
+        if(r && localUI.draftReasons[c.id]){ r.value = localUI.draftReasons[c.id]; }
+        const s = document.getElementById('score-'+c.id);
+        if(s && localUI.scoreSelections[c.id]){
+          s.value = localUI.scoreSelections[c.id];
+          const card = document.querySelector(`.rating-card[data-category="${c.id}"]`);
+          const btns = card ? card.querySelectorAll('.score-btn') : [];
+          btns.forEach(b=>{
+            if(b.textContent===String(localUI.scoreSelections[c.id])) b.classList.add('selected');
+          });
+        }
+      });
+      const pt = document.getElementById('problem-title');
+      if(pt && localUI.draftProblem.title){ pt.value = localUI.draftProblem.title; }
+      const pd = document.getElementById('problem-details');
+      if(pd && localUI.draftProblem.details){ pd.value = localUI.draftProblem.details; }
+      const pc = document.getElementById('problem-category');
+      if(pc && localUI.draftProblem.categoryId){ pc.value = localUI.draftProblem.categoryId; }
+      const rt = document.getElementById('responsibility-text');
+      if(rt && localUI.draftResponsibility){ rt.value = localUI.draftResponsibility; }
+      // Restore vote selection + limit
+      const voteChecks = [...document.querySelectorAll('.vote-check')];
+      if(voteChecks.length){
+        const selected = new Set(localUI.draftVoteSelection||[]);
+        voteChecks.forEach(cb=>{ cb.checked = selected.has(cb.value); });
+        try{ enforceVoteLimit(); }catch(e){}
+      }
+      // Facilitator dashboard draft restore:
+      const addNameInput = document.getElementById('new-participant-name');
+      if(addNameInput && localUI.facilitatorNewParticipantName){ addNameInput.value = localUI.facilitatorNewParticipantName; }
+      const facInputs = [...document.querySelectorAll('[data-fac-draft]')];
+      facInputs.forEach(el => {
+        const k = el.getAttribute('data-fac-draft');
+        if(k && localUI.facilitatorDraftInputs[k] != null && (el.tagName==='INPUT' || el.tagName==='TEXTAREA' || el.tagName==='SELECT')){
+          // Don't overwrite an input that the user is currently actively editing, only apply when the draft doesn't match the rendered source value.
+          const rendered = el.value;
+          const draft = localUI.facilitatorDraftInputs[k];
+          if(draft && rendered !== draft){
+            // If the input has focus, the user is actively editing it; leave it alone (they are on the edit side of a change event).
+            if(document.activeElement !== el){
+              el.value = draft;
+            }
+          }
+        }
+      });
+    }
+
+    // Publish the draft helpers globally so the online adapter can call them before/after renders.
+    window.captureDraftsBeforeRerender = captureDraftsBeforeRerender;
+    window.restoreDraftsAfterRerender = restoreDraftsAfterRerender;
+
+    function renderParticipantHub(){
+      const p=getParticipant(currentParticipantId); if(!p)return participantLogout();
+      captureDraftsBeforeRerender();
+      document.getElementById('participant-alias').innerHTML=`${avatarInline(p.avatarId)} Avatar secured`;
+      const phase=state.settings.phase;
+      document.getElementById('participant-phase-banner').innerHTML=`<div><strong>${esc(sharedViewLabel(phase)||phase)}</strong><br><span>${phaseInstruction(phase)}</span></div><span class="pill ${phase==='closed'?'yellow':'green'}">${phase==='closed'?'Waiting':'Open'}</span>`;
+      const box=document.getElementById('participant-activity');
+      if(phase==='shoutouts')box.innerHTML=participantShoutout(p);
+      else if(phase==='scan')box.innerHTML=participantScan(p);
+      else if(phase==='problems')box.innerHTML=participantProblems(p);
+      else if(phase==='voting')box.innerHTML=participantVoting(p);
+      else if(phase==='responsibility')box.innerHTML=participantResponsibility(p);
+      else box.innerHTML='<div class="panel"><div class="empty">No activity is open right now. Keep this page private and refresh the mission console when the facilitator opens the next activity.</div><div style="margin-top:14px"><button type="button" class="btn-secondary" onclick="renderParticipantHub()">Refresh</button></div></div>';
+      restoreDraftsAfterRerender();
+      if(phase==='shoutouts') syncWheelUIFromLocalState();
+    }
+    function phaseInstruction(p){return ({closed:'The facilitator has not opened an activity.',shoutouts:'Spin the wheel privately and write a specific compliment.',scan:'Score every category and add a reason for each score.',problems:'Add a problem or system issue anonymously.',voting:'Use your anonymous web tokens on the most important topics.',responsibility:'Add one behaviour you will personally practise.'})[p]||'';}
+
+    function participantShoutout(p){
+      const existing=state.shoutouts.find(x=>x.authorId===p.id||x.clientParticipantId===p.id), recipient=getParticipant(state.assignments[p.id]);
+      if(existing){ resetWheelLocalState(); return `<div class="panel"><div class="empty">Your shout-out has been submitted. The writer stays hidden on the shared screen.</div></div>`; }
+      if(!recipient)return `<div class="panel"><div class="empty">Your assignment is not ready yet. Ask the facilitator to prepare the wheel.</div></div>`;
+      if(localUI.wheelRecipientId && localUI.wheelRecipientId!==recipient.id) resetWheelLocalState();
+      return `<div class="comic-card"><div class="wheel-wrap"><div class="wheel-pointer"></div><div class="wheel-stage"><div id="participant-wheel" class="wheel">${wheelNameLabels(p.id)}</div><div id="wheel-label" class="wheel-label">Spin to reveal<br>your assignment</div></div></div>
+      <div style="text-align:center"><button type="button" id="spin-btn" class="btn-primary" onclick="spinWheel('${recipient.id}')">Spin Wheel</button></div>
+      <div id="assignment-reveal" class="assignment-reveal hidden" aria-live="polite"></div>
+      <div id="shoutout-form" class="hidden" style="max-width:720px;margin:24px auto 0"><div class="sticky"><h3 style="margin-top:0">Write a specific shout-out</h3><p>What did this person do during the iteration that helped you, the team or the work?</p><textarea id="shoutout-text" placeholder="Describe the action and its positive impact..."></textarea><div style="margin-top:12px"><button type="button" class="btn-dark" onclick="submitShoutout('${recipient.id}')">Submit privately</button></div></div></div></div>`;
+    }
+    function wheelNameLabels(authorId){
+      const slotCount=Math.max(state.participants.filter(person=>person.id!==authorId).length,6);
+      const symbols=['🕸️','?','🕷️','?'];
+      return Array.from({length:slotCount},(_,index)=>`<span class="wheel-name anonymous-wheel-slot" style="--angle:${index*(360/slotCount)}deg;--counter-angle:${-index*(360/slotCount)}deg"><span aria-hidden="true">${symbols[index%symbols.length]}</span></span>`).join('');
+    }
+    function scheduleWheelCompletion(){
+      if(localUI.wheelTimerId) clearTimeout(localUI.wheelTimerId);
+      if(!localUI.wheelSpun || localUI.wheelResultVisible) return;
+      const remaining=Math.max(0,(localUI.wheelAnimationEndsAt||Date.now())-Date.now());
+      localUI.wheelTimerId=setTimeout(()=>completeWheelReveal(),remaining);
+    }
+    function completeWheelReveal(){
+      localUI.wheelTimerId=null;
+      localUI.wheelAnimationComplete=true;
+      localUI.wheelResultVisible=true;
+      syncWheelUIFromLocalState();
+    }
+    function syncWheelUIFromLocalState(){
+      const recipientId=state.assignments?.[currentParticipantId];
+      const recipient=getParticipant(recipientId);
+      if(!recipient || !document.getElementById('participant-wheel')) return;
+      if(localUI.wheelRecipientId && localUI.wheelRecipientId!==recipientId) resetWheelLocalState();
+      const wheel=document.getElementById('participant-wheel');
+      const label=document.getElementById('wheel-label');
+      const reveal=document.getElementById('assignment-reveal');
+      const form=document.getElementById('shoutout-form');
+      const spinButton=document.getElementById('spin-btn');
+      if(localUI.wheelFinalAngle!=null) wheel.style.transform=`rotate(${localUI.wheelFinalAngle}deg)`;
+      if(localUI.wheelResultVisible && localUI.wheelRecipientId===recipientId){
+        const name=recipient.name || localUI.wheelRecipientName || 'Your assigned team mate';
+        const avatarId=recipient.avatarId || localUI.wheelRecipientAvatarId || null;
+        label.textContent='Name revealed — only you can see this';
+        spinButton.disabled=true;
+        reveal.innerHTML=`${avatarPicture(avatarId)}<span class="eyebrow">You got:</span><strong>${esc(name)}</strong><div class="hint">Only you and the facilitator dashboard can see this assignment. It never appears on the shared screen.</div><div style="margin-top:16px"><button type="button" class="btn-primary" onclick="continueFromWheelResult()">Continue to write shout-out</button></div>`;
+        reveal.classList.remove('hidden');
+        form.classList.toggle('hidden',!localUI.wheelFormVisible);
+        if(!form.classList.contains('hidden') && localUI.draftShoutout){ const t=document.getElementById('shoutout-text'); if(t)t.value=localUI.draftShoutout; }
+        return;
+      }
+      if(localUI.wheelSpun && localUI.wheelRecipientId===recipientId){
+        label.textContent='Spinning...';
+        spinButton.disabled=true;
+        reveal.classList.add('hidden');
+        form.classList.add('hidden');
+        scheduleWheelCompletion();
+        return;
+      }
+      label.innerHTML='Spin to reveal<br>your assignment';
+      spinButton.disabled=false;
+      reveal.classList.add('hidden');
+      form.classList.add('hidden');
+    }
+    function spinWheel(recipientId){
+      if(localUI.wheelSpun || localUI.wheelResultVisible) return;
+      const recipient=getParticipant(recipientId);
+      if(!recipient) return toast('Your assignment is still loading. Try again in a moment.');
+      localUI.wheelSpun=true;
+      localUI.wheelResultVisible=false;
+      localUI.wheelFormVisible=false;
+      localUI.wheelRecipientId=recipientId;
+      localUI.wheelRecipientName=recipient.name||'Your assigned team mate';
+      localUI.wheelRecipientAvatarId=recipient.avatarId||null;
+      localUI.wheelAnimationComplete=false;
+      localUI.wheelFinalAngle=1080+Math.floor(Math.random()*360);
+      localUI.wheelAnimationEndsAt=Date.now()+2400;
+      syncWheelUIFromLocalState();
+    }
+    function continueFromWheelResult(){
+      if(!localUI.wheelResultVisible) return;
+      localUI.wheelFormVisible=true;
+      syncWheelUIFromLocalState();
+      const form=document.getElementById('shoutout-form');
+      const shoutoutText=document.getElementById('shoutout-text');
+      if(form){ try{ form.scrollIntoView({behavior:'smooth',block:'start'}); }catch(_){} }
+      if(shoutoutText){ try{ shoutoutText.focus({preventScroll:true}); }catch(_){ shoutoutText.focus(); } }
+    }
+    // (submitGuard/submitDone/submitting_ declared earlier in shared global state section.)
+
+    function submitShoutout(recipientId){
+      if(!submitGuard()) return;
+      try{
+        const text=document.getElementById('shoutout-text').value.trim();
+        if(text.length<12){ submitDone(); return toast('Please write a specific compliment'); }
+        const p=getParticipant(currentParticipantId);
+        if(p && state.shoutouts.find(x=>(x.authorId===p.id||x.clientParticipantId===p.id))){ submitDone(); return toast('You have already submitted a shout-out.'); }
+        state.shoutouts.push({id:uid(),authorId:currentParticipantId,recipientId,text,createdAt:Date.now()});
+        anonymiseIfNeeded('shoutouts',state.shoutouts[state.shoutouts.length-1],'authorId');
+        localUI.draftShoutout='';
+        saveState();
+        renderParticipantHub();
+        toast('Shout-out submitted');
+      } finally { submitDone(); }
+    }
+
+    function participantScan(p){
+      const existing=state.scanResponses.find(x=>x.participantId===p.id||x.clientParticipantId===p.id);
+      if(existing)return `<div class="panel"><div class="empty">Your team scan is complete. Scores and reasons are shown only in aggregate on the shared screen.</div></div>`;
+      const groups=[...new Set(state.categories.map(c=>c.group))];
+      return `<div class="panel"><h3>${esc(state.settings.labels.scan)}</h3><p class="panel-sub">1 = rarely visible, 3 = inconsistent, 5 = consistently visible even under pressure.</p>
+        <form id="scan-form">${groups.map(g=>`<h3 style="margin-top:26px;color:var(--yellow)">${esc(g)}</h3><div class="rating-grid">${state.categories.filter(c=>c.group===g).map(c=>`<div class="rating-card" data-category="${c.id}"><h4>${esc(c.name)}</h4><p>${esc(c.description)}</p><div class="score-row">${[1,2,3,4,5].map(n=>`<button type="button" class="score-btn" onclick="selectScore('${c.id}',${n},this)">${n}</button>`).join('')}</div><div class="sticky"><label>Reason for your score</label><textarea id="reason-${c.id}" placeholder="What situation or behaviour influenced your rating?"></textarea></div><input type="hidden" id="score-${c.id}"></div>`).join('')}</div>`).join('')}<button type="button" class="btn-primary" style="margin-top:20px" onclick="submitScan()">Submit Team Scan</button></form></div>`;
+    }
+    function selectScore(id,n,btn){ document.getElementById('score-'+id).value=n; btn.parentElement.querySelectorAll('.score-btn').forEach(x=>x.classList.remove('selected')); btn.classList.add('selected'); }
+    function submitScan(){
+      if(!submitGuard()) return;
+      try{
+        const answers={};
+        for(const c of state.categories){ const score=Number(document.getElementById('score-'+c.id)?.value); const reason=document.getElementById('reason-'+c.id)?.value.trim(); if(!score||!reason){ submitDone(); return toast(`Complete the score and reason for ${c.name}`); } answers[c.id]={score,reason}; }
+        const p=getParticipant(currentParticipantId);
+        if(p && state.scanResponses.find(x=>(x.participantId===p.id||x.clientParticipantId===p.id))){ submitDone(); return toast('You have already submitted the team scan.'); }
+        const record={id:uid(),participantId:currentParticipantId,answers,createdAt:Date.now()};
+        anonymiseIfNeeded('scanResponses',record,'participantId');
+        state.scanResponses.push(record);
+        // Clear drafts
+        localUI.draftReasons = {}; localUI.scoreSelections = {};
+        saveState();
+        renderParticipantHub();
+        toast('Team scan submitted');
+      } finally { submitDone(); }
+    }
+
+    function participantProblems(p){
+      return `<div class="panel"><h3>${esc(state.settings.labels.problemsSystem)}</h3><p class="panel-sub">Describe an observable situation or process. Avoid naming or attacking a person.</p><div class="grid-2"><div class="field"><label>Related category</label><select id="problem-category"><option value="">General</option>${state.categories.map(c=>`<option value="${c.id}">${esc(c.group)} — ${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Short title</label><input id="problem-title" placeholder="Example: Blockers are raised too late"></div></div><div class="sticky"><label>What happened and how did it affect the team?</label><textarea id="problem-details" placeholder="Describe the situation, impact and pattern..."></textarea></div><button type="button" class="btn-primary" style="margin-top:18px" onclick="submitProblem()">Add Broken Web</button></div>
+      <div class="panel"><h3>Your submissions</h3>${state.problems.filter(x=>x.authorId===p.id || x.clientParticipantId===p.id).length?`<div class="note-grid">${state.problems.filter(x=>x.authorId===p.id || x.clientParticipantId===p.id).map(x=>`<div class="web-note"><h4>${esc(x.title)}</h4><p>${esc(x.details)}</p></div>`).join('')}</div>`:'<div class="empty">You have not submitted a broken web yet.</div>'}</div>`;
+    }
+    function submitProblem(){
+      if(!submitGuard()) return;
+      try{
+        const title=document.getElementById('problem-title').value.trim(),details=document.getElementById('problem-details').value.trim(),categoryId=document.getElementById('problem-category').value;
+        if(title.length<4||details.length<12){ submitDone(); return toast('Add a clear title and specific details'); }
+        const record={id:uid(),authorId:currentParticipantId,clientParticipantId:currentParticipantId,categoryId,title,details,createdAt:Date.now()};
+        anonymiseIfNeeded('problems',record,'authorId');
+        state.problems.push(record);
+        localUI.draftProblem = { title:'', details:'', categoryId:'' };
+        saveState();
+        renderParticipantHub();
+        toast('Broken web added anonymously');
+      } finally { submitDone(); }
+    }
+
+    function participantVoting(p){
+      const existing=state.votes.find(x=>x.participantId===p.id||x.clientParticipantId===p.id);
+      if(existing)return `<div class="panel"><div class="empty">Your anonymous votes are submitted.</div></div>`;
+      if(!state.problems.length)return `<div class="panel"><div class="empty">No topics are available for voting.</div></div>`;
+      return `<div class="panel"><h3>Anonymous Voting</h3><p class="panel-sub">Choose up to ${state.settings.voteLimit} topics. Results appear only after the facilitator reveals them.</p><div class="note-grid">${state.problems.map(pr=>`<label class="web-note" style="cursor:pointer"><input type="checkbox" class="vote-check" value="${pr.id}" onchange="enforceVoteLimit()" style="width:auto;margin-right:8px"><h4>${esc(pr.title)}</h4><p>${esc(pr.details)}</p></label>`).join('')}</div><button type="button" class="btn-primary" style="margin-top:18px" onclick="submitVotes()">Submit Anonymous Votes</button></div>`;
+    }
+    function enforceVoteLimit(){ const checks=[...document.querySelectorAll('.vote-check')], selected=checks.filter(x=>x.checked); checks.filter(x=>!x.checked).forEach(x=>x.disabled=selected.length>=state.settings.voteLimit); }
+    function submitVotes(){
+      if(!submitGuard()) return;
+      try{
+        const ids=[...document.querySelectorAll('.vote-check:checked')].map(x=>x.value);
+        if(!ids.length){ submitDone(); return toast('Choose at least one topic'); }
+        if(ids.length>state.settings.voteLimit){ submitDone(); return toast(`Choose at most ${state.settings.voteLimit} topics`); }
+        const p=getParticipant(currentParticipantId);
+        if(p && state.votes.find(x=>(x.participantId===p.id||x.clientParticipantId===p.id))){ submitDone(); return toast('You have already voted.'); }
+        const record={id:uid(),participantId:currentParticipantId,clientParticipantId:currentParticipantId,problemIds:ids,createdAt:Date.now()};
+        anonymiseIfNeeded('votes',record,'participantId');
+        state.votes.push(record);
+        localUI.draftVoteSelection = [];
+        saveState();
+        renderParticipantHub();
+        toast('Votes submitted');
+      } finally { submitDone(); }
+    }
+
+    function participantResponsibility(p){
+      const existing=state.responsibilities.find(x=>x.participantId===p.id);
+      if(existing)return `<div class="panel"><div class="empty">Your responsibility is already on the web.</div></div>`;
+      return `<div class="panel"><h3>${esc(state.settings.labels.responsibility)}</h3><p class="panel-sub">Add one behaviour you will personally practise during the next iteration. The shared screen shows only your avatar.</p><div class="sticky"><textarea id="responsibility-text" placeholder="I will..."></textarea></div><button type="button" class="btn-primary" style="margin-top:18px" onclick="submitResponsibility()">Add My Responsibility</button></div>`;
+    }
+    function submitResponsibility(){
+      if(!submitGuard()) return;
+      try{
+        const text=document.getElementById('responsibility-text').value.trim();
+        if(text.length<8){ submitDone(); return toast('Write a specific personal behaviour'); }
+        const p=getParticipant(currentParticipantId);
+        if(p && state.responsibilities.find(x=>x.participantId===p.id)){ submitDone(); return toast('You have already shared a responsibility.'); }
+        state.responsibilities.push({id:uid(),participantId:currentParticipantId,text,createdAt:Date.now()});
+        localUI.draftResponsibility='';
+        saveState();
+        renderParticipantHub();
+        toast('Responsibility added');
+      } finally { submitDone(); }
+    }
+
+    function anonymiseIfNeeded(collection,record,identityField){ if(state.settings.identityMode==='fully-anonymous'){ record.clientParticipantId=record[identityField]; record[identityField]=null; } }
+
+    function showSharedScreen(){ showScreen('shared'); }
+    function openSharedWindow(){
+      const url=new URL(window.location.href);
+      url.hash='shared';
+      window.open(url.toString(),'whpSharedScreen','noopener');
+    }
+    function sharedStageNav(){
+      return `<div class="shared-nav no-print">${['overview','shoutouts','scan','problems','voting','missions','responsibility'].map(v=>`<button class="${state.ui.sharedView===v?'btn-primary':'btn-dark'} btn-small" onclick="setSharedView('${v}')">${sharedViewLabel(v)}</button>`).join('')}</div>`;
+    }
+    function renderShared(){
+      document.getElementById('shared-session-title').textContent=state.settings.title;
+      document.getElementById('shared-session-subtitle').textContent=[state.settings.iteration,fmtDate(state.settings.date),state.settings.mission].filter(Boolean).join(' · ');
+      document.getElementById('shared-phase-label').textContent=sharedViewLabel(state.ui.sharedView);
+      const box=document.getElementById('shared-content');
+      const v=state.ui.sharedView;
+      let content='';
+      if(v==='shoutouts')content=sharedShoutouts();
+      else if(v==='scan')content=sharedScan();
+      else if(v==='problems')content=sharedProblems(false);
+      else if(v==='voting')content=sharedProblems(true);
+      else if(v==='missions')content=sharedMissions();
+      else if(v==='responsibility')content=sharedResponsibilities();
+      else content=sharedOverview();
+      box.innerHTML=sharedStageNav()+content;
+    }
+
+    function sharedOverview(){
+      const phaseName=sharedViewLabel(state.settings.phase==='closed'?'overview':state.settings.phase);
+      return `<div class="shared-instruction"><strong>Current activity: ${esc(phaseName)}</strong><br>The facilitator can move this presentation between stages from the dashboard. Participant names never appear here.</div><div class="grid-4">${metricCard(state.shoutouts.length,state.settings.labels.shoutouts,'submitted')}${metricCard(state.scanResponses.length,state.settings.labels.scan,'completed')}${metricCard(state.problems.length,state.settings.labels.brokenWebs,'topics')}${metricCard(state.votes.length,'Anonymous ballots','cast')}</div><div class="panel" style="margin-top:18px"><h3>Mission</h3><p style="font-size:1.25rem;line-height:1.6">${esc(state.settings.mission)}</p></div>`;
+    }
+    function sharedShoutouts(){
+      if(!state.shoutouts.length)return `<div class="shared-instruction"><strong>Shout-outs are open.</strong><br>Each participant privately spins their wheel, sees their assigned person and submits one specific compliment.</div><div class="shared-count">0 of ${state.participants.length} submitted</div>`;
+      return `<div class="shared-instruction">Compliments are anonymous by default. Only avatars are shown, never real names.</div><div class="shared-count">${state.shoutouts.length} of ${state.participants.length} shout-outs collected</div><div class="note-grid">${state.shoutouts.map(x=>{
+        const r=getParticipant(x.recipientId), a=getParticipant(x.authorId);
+        const writer=state.revealedShoutouts.includes(x.id)?`${avatarInline(a?.avatarId)} Writer revealed by avatar`:'Writer hidden';
+        return `<div class="web-note"><h4>${avatarInline(r?.avatarId)} For this hero</h4><p>${esc(x.text)}</p><div class="meta">${writer}</div></div>`;
+      }).join('')}</div>`;
+    }
+    function sharedScan(){
+      if(!state.scanResponses.length)return `<div class="shared-instruction"><strong>Team Scan is open.</strong><br>Participants rate each category from 1 to 5 and add an anonymous written reason.</div><div class="shared-count">0 of ${state.participants.length} submitted</div>`;
+      const groups=[...new Set(state.categories.map(c=>c.group))];
+      const completedCount=state.scanResponses.length;
+      return `<div class="shared-instruction"><strong>One result per category.</strong><br>Each category shows the team average, followed by every written reason as a separate anonymous ticket. Individual scores are never displayed.</div><div class="shared-count">${completedCount} of ${state.participants.length} scans completed</div><div class="shared-scan-groups">${groups.map(g=>`<section class="panel"><h3>${esc(g)}</h3><div class="shared-scan-category-stack">${state.categories.filter(c=>c.group===g).map(c=>{
+        const vals=state.scanResponses
+          .map(r=>Number(r.answers?.[c.id]?.score))
+          .filter(v=>Number.isFinite(v)&&v>=1&&v<=5);
+        const reasons=state.scanResponses
+          .map(r=>String(r.answers?.[c.id]?.reason||'').trim())
+          .filter(Boolean);
+        if(!vals.length){
+          return `<article class="shared-scan-category"><div class="shared-scan-summary"><div><h4>${esc(c.name)}</h4><p class="shared-scan-description">${esc(c.description)}</p></div><div class="shared-average"><strong>–</strong><span>Waiting</span></div></div><div class="shared-no-reasons" style="margin-top:18px">No ratings have been submitted for this category yet.</div></article>`;
+        }
+        const avg=vals.reduce((sum,value)=>sum+value,0)/vals.length;
+        const range=Math.max(...vals)-Math.min(...vals);
+        const spreadLabel=range>=3?'Different experiences detected':range===0?'Strong agreement':`Score range: ${range}`;
+        return `<article class="shared-scan-category"><div class="shared-scan-summary"><div><h4>${esc(c.name)}</h4><p class="shared-scan-description">${esc(c.description)}</p><div class="shared-scan-meta"><span class="pill blue">${vals.length} response${vals.length===1?'':'s'}</span><span class="pill ${range>=3?'red':'green'}">${esc(spreadLabel)}</span></div></div><div class="shared-average"><strong>${avg.toFixed(1)}</strong><span>Average / 5</span></div></div><div class="meter" style="margin-top:17px"><span style="width:${Math.max(0,Math.min(100,avg/5*100))}%"></span></div><h5 class="shared-ticket-heading">Written reasons (${reasons.length})</h5>${reasons.length?`<div class="shared-ticket-grid">${reasons.map(reason=>`<div class="shared-reason-ticket">${esc(reason)}</div>`).join('')}</div>`:`<div class="shared-no-reasons">No written reasons were added for this category.</div>`}</article>`;
+      }).join('')}</div></section>`).join('')}</div>`;
+    }
+    function sharedProblems(showVotes){
+      if(!state.problems.length)return `<div class="shared-instruction"><strong>Broken Webs are open.</strong><br>Participants can add observable problems and system issues anonymously.</div><div class="shared-count">No topics submitted yet</div>`;
+      const sorted=[...state.problems].sort((a,b)=>voteCount(b.id)-voteCount(a.id));
+      return `<div class="shared-instruction">${showVotes?'Voting is closed and totals are now visible.':'Topics are anonymous. Discuss the pattern and impact, not who may have written them.'}</div><div class="shared-count">${showVotes?'Anonymous votes revealed':state.problems.length+' problems in the system'}</div><div class="note-grid">${sorted.map(p=>`<div class="web-note"><h4>${esc(p.title)}</h4><p>${esc(p.details)}</p><div class="meta">${esc(getCategory(p.categoryId)?.name||'General')}${showVotes?` · ${voteCount(p.id)} vote${voteCount(p.id)===1?'':'s'}`:''}</div></div>`).join('')}</div>`;
+    }
+    function sharedMissions(){
+      const blocks=[['Web Repairs',state.repairs],['Next Mission',state.missions],['Mission Results',state.results]];
+      return blocks.map(([title,list])=>`<div class="panel"><h3>${esc(title)}</h3>${list.length?`<div class="grid-2">${list.map(r=>sharedMissionCard(r)).join('')}</div>`:'<div class="empty">Nothing added yet.</div>'}</div>`).join('');
+    }
+    function sharedMissionCard(r){ const p=getParticipant(r.ownerParticipantId); return `<div class="result-card"><div class="result-top"><div><h4>${esc(r.title)}</h4><span class="pill ${r.status==='Completed'?'green':r.status==='At risk'?'red':'blue'}">${esc(r.status||'Not started')}</span></div>${p?avatarInline(p.avatarId):''}</div><p>${esc(r.details||'')}</p><div class="meter"><span style="width:${Number(r.progress||0)}%"></span></div><div class="meter-label"><span>${Number(r.progress||0)}%</span><span>${fmtDate(r.startDate)} → ${fmtDate(r.dueDate)}</span></div>${r.measurement?`<div class="pill yellow">${esc(r.measurement)}</div>`:''}</div>`; }
+    function sharedResponsibilities(){ if(!state.responsibilities.length)return '<div class="empty">Personal commitments will appear here by avatar only.</div>'; return `<div class="note-grid">${state.responsibilities.map(r=>`<div class="web-note"><h4>${avatarInline(getParticipant(r.participantId)?.avatarId)} My responsibility</h4><p>${esc(r.text)}</p></div>`).join('')}</div>`; }
+
+    function getParticipant(id){ return state.participants.find(p=>p.id===id); }
+    function getCategory(id){ return state.categories.find(c=>c.id===id); }
+    function getAvatar(id){ return avatarOptions.find(a=>a.id===id)||avatarOptions[0]; }
+    function avatarImage(id,className='avatar-picture'){
+      const a=getAvatar(id);
+      const fallback=avatarSvg(id);
+      const style=`--avatar-position:${a.position||'50% 30%'}`;
+      return `<img class="${esc(className)}" style="${esc(style)}" src="${esc(a.image||fallback)}" data-fallback="${esc(fallback)}" alt="${esc(a.name)} avatar" title="${esc(a.name)}" referrerpolicy="no-referrer" loading="lazy" onerror="avatarImageFallback(this)">`;
+    }
+    function avatarImageFallback(img){
+      if(img.dataset.fallback && img.src!==img.dataset.fallback){
+        img.src=img.dataset.fallback;
+        img.classList.add('avatar-picture-fallback');
+      }
+    }
+    function avatarSvg(id){
+      const a=getAvatar(id);
+      const bgDots=`<g opacity=".16" fill="#ffffff"><circle cx="18" cy="20" r="3"/><circle cx="42" cy="12" r="2"/><circle cx="158" cy="22" r="3"/><circle cx="145" cy="48" r="2"/><circle cx="23" cy="150" r="3"/><circle cx="156" cy="153" r="2"/></g>`;
+      const web=`<g fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.4"><circle cx="90" cy="90" r="70"/><circle cx="90" cy="90" r="48"/><path d="M90 8v164M8 90h164M31 31l118 118M149 31 31 149"/></g>`;
+      const shoulders=(fill, collar='#f4f4f4')=>`<path d="M25 180 Q31 133 64 124 L90 141 116 124 Q149 133 155 180Z" fill="${fill}"/><path d="M64 124 90 141 116 124 108 153 72 153Z" fill="${collar}" opacity=".92"/>`;
+      const maskHead=(fill, eye, detail='web')=>{
+        const lines=detail==='web'?`<g fill="none" stroke="rgba(255,255,255,.34)" stroke-width="1.4"><path d="M90 28v94M53 72h74M63 43l54 58M117 43 63 101"/><ellipse cx="90" cy="76" rx="24" ry="36"/><ellipse cx="90" cy="76" rx="39" ry="51"/></g>`:'';
+        const angular=detail==='angular';
+        const eyes=angular
+          ? `<path d="M55 65 81 48 72 82 53 78Z"/><path d="M125 65 99 48 108 82 127 78Z"/>`
+          : `<path d="M54 55 Q70 42 81 52 L73 84 Q61 80 54 55Z"/><path d="M126 55 Q110 42 99 52 L107 84 Q119 80 126 55Z"/>`;
+        return `<path d="M48 76 Q48 26 90 20 Q132 26 132 76 L126 111 Q112 132 90 135 Q68 132 54 111Z" fill="${fill}" stroke="#0a0d13" stroke-width="5"/>${lines}<g fill="${eye}" stroke="#0a0d13" stroke-width="4">${eyes}</g>`;
+      };
+      const humanFace=(skin, hair, hairPath, eyes='#20242c')=>`<ellipse cx="90" cy="76" rx="39" ry="49" fill="${skin}" stroke="#151922" stroke-width="4"/>${hairPath}<ellipse cx="75" cy="75" rx="4" ry="5" fill="${eyes}"/><ellipse cx="105" cy="75" rx="4" ry="5" fill="${eyes}"/><path d="M86 87 Q90 91 94 87" fill="none" stroke="#9a5a47" stroke-width="2"/><path d="M76 101 Q90 110 104 101" fill="none" stroke="#9a4f4a" stroke-width="3" stroke-linecap="round"/>`;
+      let portrait='';
+      switch(a.kind){
+        case 'spider':
+          portrait=shoulders('#124e96','#d72631')+maskHead('#d72631','#ffffff','web');
+          break;
+        case 'miles':
+          portrait=shoulders('#111318','#cf2030')+maskHead('#111318','#ff4153','angular')+`<path d="M90 29 98 48 119 50 103 63 108 84 90 73 72 84 77 63 61 50 82 48Z" fill="#cf2030" opacity=".42"/>`;
+          break;
+        case 'gwen':
+          portrait=shoulders('#f4f5f7','#ef5ca8')+`<path d="M44 91 Q43 27 90 14 Q137 27 136 91 L122 81 Q119 38 90 30 Q61 38 58 81Z" fill="#f8f8fb" stroke="#ef5ca8" stroke-width="6"/>`+maskHead('#f5f6f8','#ffffff','web')+`<path d="M52 109 Q90 132 128 109" fill="none" stroke="#41c7bb" stroke-width="5" opacity=".85"/>`;
+          break;
+        case 'punk':
+          portrait=shoulders('#202229','#e6328a')+`<path d="M58 32 62 5 76 26 88 2 96 27 113 7 119 38" fill="#e6328a" stroke="#11131a" stroke-width="4"/>`+maskHead('#273b91','#fff36d','angular')+`<circle cx="48" cy="97" r="7" fill="#fff36d"/><circle cx="132" cy="97" r="7" fill="#fff36d"/>`;
+          break;
+        case 'miguel':
+          portrait=shoulders('#071d4b','#d62235')+maskHead('#08235a','#e93745','angular')+`<path d="M90 26 99 47 121 50 104 64 109 86 90 74 71 86 76 64 59 50 81 47Z" fill="#d62235" opacity=".48"/>`;
+          break;
+        case 'venom':
+          portrait=shoulders('#101218','#d9e0e8')+maskHead('#090b10','#ffffff','angular')+`<path d="M70 104 Q90 114 110 104" fill="none" stroke="#d9e0e8" stroke-width="4" stroke-linecap="round"/>`;
+          break;
+        case 'goblin':
+          portrait=shoulders('#41245e','#7fbd56')+humanFace('#77a85c','#2e2439',`<path d="M51 67 Q52 30 90 25 Q128 30 129 67 Q112 49 90 49 Q68 49 51 67Z" fill="#4e2a68"/><path d="M58 32 Q75 6 118 15 L132 30 105 28 88 47Z" fill="#5b2a7c" stroke="#2e173f" stroke-width="4"/>`,'#f0f58a')+`<path d="M49 77 35 70 49 93M131 77 145 70 131 93" fill="#77a85c" stroke="#151922" stroke-width="4"/>`;
+          break;
+        case 'octopus':
+          portrait=shoulders('#35433a','#8da778')+humanFace('#e0b68f','#5b4635',`<path d="M53 55 Q60 22 90 22 Q120 22 127 55 Q111 39 90 39 Q69 39 53 55Z" fill="#5b4635"/>`)+`<g fill="#18262b" stroke="#92d9df" stroke-width="3"><rect x="56" y="63" width="28" height="18" rx="7"/><rect x="96" y="63" width="28" height="18" rx="7"/><path d="M84 72h12"/></g><path d="M46 143 C22 131 23 106 39 99M134 143 C158 131 157 106 141 99" fill="none" stroke="#6f7f7d" stroke-width="7" stroke-linecap="round"/>`;
+          break;
+        case 'mysterio':
+          portrait=shoulders('#31584e','#8f62ac')+`<circle cx="90" cy="72" r="52" fill="rgba(222,252,255,.86)" stroke="#d7ffff" stroke-width="6"/><ellipse cx="90" cy="73" rx="31" ry="39" fill="#d7b08b" opacity=".92"/><path d="M63 59 Q70 36 90 35 Q110 36 117 59 Q103 48 90 48 Q77 48 63 59Z" fill="#64442f"/><ellipse cx="78" cy="72" rx="4" ry="5" fill="#18313a"/><ellipse cx="102" cy="72" rx="4" ry="5" fill="#18313a"/><path d="M78 95 Q90 103 102 95" fill="none" stroke="#a55c59" stroke-width="3" stroke-linecap="round"/><path d="M52 129 34 151M128 129 146 151" stroke="#a88747" stroke-width="8" stroke-linecap="round"/>`;
+          break;
+        case 'blackcat':
+          portrait=shoulders('#1a1c22','#dce3eb')+humanFace('#e7c2a6','#ececf2',`<path d="M51 61 Q54 21 90 20 Q126 21 129 61 Q114 43 90 43 Q66 43 51 61Z" fill="#e9e9ef"/><path d="M53 51 43 27 67 42M127 51 137 27 113 42" fill="#1a1c22" stroke="#0a0b0e" stroke-width="4"/>`,'#8ed7ff')+`<path d="M56 68 Q73 55 86 66 Q72 82 56 78ZM124 68 Q107 55 94 66 Q108 82 124 78Z" fill="#16191f" stroke="#7fd8ff" stroke-width="3"/>`;
+          break;
+        case 'spiderwoman':
+          portrait=shoulders('#a71c2b','#e9b53c')+maskHead('#a91f2d','#ffe88f','angular')+`<path d="M90 30 98 48 118 51 103 64 107 84 90 74 73 84 77 64 62 51 82 48Z" fill="#e9b53c" opacity=".5"/>`;
+          break;
+        default:
+          portrait=shoulders(a.suit||a.a,'#ffffff')+maskHead(a.a,a.eye||'#ffffff','web');
+      }
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${a.a}"/><stop offset="1" stop-color="${a.b}"/></linearGradient><filter id="shadow"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity=".35"/></filter></defs><rect width="180" height="180" rx="28" fill="url(#bg)"/>${web}${bgDots}<g filter="url(#shadow)">${portrait}</g><rect x="3" y="3" width="174" height="174" rx="25" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="4"/></svg>`;
+      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    }
+    function avatarPicture(id){ if(!id)return '<span class="pill">No avatar</span>'; return avatarImage(id,'avatar-picture'); }
+    function avatarInline(id){ if(!id)return '<span class="pill">No avatar</span>'; return avatarImage(id,'avatar-picture mini-avatar'); }
+
+    if(!listenersAttached.has('pin-enter')){
+      document.getElementById('facilitator-pin-input').addEventListener('keydown',e=>{
+        if(e.key==='Enter'){ e.preventDefault(); facilitatorLogin(); }
+      });
+      listenersAttached.add('pin-enter');
+    }
+    if(!listenersAttached.has('name-enter')){
+      const nameInput=document.getElementById('participant-name-input');
+      nameInput.addEventListener('input',e=>{ localUI.participantNameTyping = e.target.value; });
+      nameInput.addEventListener('focus',()=>{ if(!localUI.participantNameTyping) localUI.participantNameTyping = nameInput.value; });
+      listenersAttached.add('name-enter');
+    }
+    // Re-apply the remembered name input value (e.g. after a reload mid-typing that cleared dom).
+    try{
+      const ni = document.getElementById('participant-name-input');
+      if(ni && localUI.participantNameTyping && !ni.value) ni.value = localUI.participantNameTyping;
+    }catch(_){}
+    if(!listenersAttached.has('storage-sync')){
+      window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){state=loadState();if(document.getElementById('screen-shared').classList.contains('active'))renderShared();}});
+      listenersAttached.add('storage-sync');
+    }
+
+    updateHome();
+    if(currentParticipantId && !getParticipant(currentParticipantId)){currentParticipantId=null;sessionStorage.removeItem('whpParticipantId');}
+    if(window.location.hash==='#shared') setTimeout(()=>showSharedScreen(),0);
+  </script>
+  <script src="./online.js"></script>
+</body>
+</html>

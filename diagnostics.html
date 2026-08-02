@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Web of High Performance — Connection Test</title>
+<style>
+body{font-family:Arial,sans-serif;background:#0b1020;color:#fff;margin:0;padding:28px}.wrap{max-width:850px;margin:auto}.card{background:#151d35;border:1px solid #344265;border-radius:16px;padding:20px;margin:14px 0}.ok{border-color:#29c785}.bad{border-color:#ff5a6f}.warn{border-color:#f3c74f}code{background:#090d18;padding:2px 6px;border-radius:5px;word-break:break-all}.small{color:#b7c0d8}button{background:#e53245;color:#fff;border:0;padding:12px 18px;border-radius:10px;font-weight:bold;cursor:pointer}.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;background:#777}.ok .dot{background:#29c785}.bad .dot{background:#ff5a6f}.warn .dot{background:#f3c74f}pre{white-space:pre-wrap;word-break:break-word;background:#090d18;padding:12px;border-radius:10px}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Connection Test v3</h1>
+<p class="small">This version tests the exact database function used by the retrospective. It does not test the protected API-root endpoint.</p>
+<button onclick="runTests()">Run connection test</button>
+<div id="results"></div>
+</div>
+<script src="./config.js"></script>
+<script>
+const box=(kind,title,body)=>`<div class="card ${kind}"><h3><span class="dot"></span>${title}</h3><div>${body}</div></div>`;
+const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+async function runTests(){
+ const r=document.getElementById('results');r.innerHTML='';
+ const cfg=window.WHP_CONFIG||{};
+ const raw=String(cfg.supabaseUrl||'').trim();
+ const url=raw.replace(/\/+$/,'').replace(/\/rest\/v1$/i,'');
+ const key=String(cfg.supabasePublishableKey||'').trim();
+ if(!raw||raw.includes('PASTE_')){r.innerHTML+=box('bad','Supabase URL missing','Open <code>config.js</code> and paste the Project URL.');return;}
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) r.innerHTML+=box('warn','Check the project URL','Expected <code>https://PROJECT-REF.supabase.co</code>. Current value: <code>'+esc(url)+'</code>');
+ else r.innerHTML+=box('ok','Project URL format looks correct','<code>'+esc(url)+'</code>');
+ if(!key||key.includes('PASTE_')){r.innerHTML+=box('bad','Browser key missing','Open <code>config.js</code> and paste the publishable or legacy anon key.');return;}
+ if(key.startsWith('sb_secret_')||/service_role/i.test(key)){r.innerHTML+=box('bad','Unsafe server key detected','Use only a publishable key beginning <code>sb_publishable_</code> or legacy anon key beginning <code>eyJ</code>.');return;}
+ r.innerHTML+=box('ok','Browser-safe key is present','Key begins <code>'+esc(key.slice(0,18))+'…</code>');
+ let res,text;
+ try{
+   res=await fetch(url+'/rest/v1/rpc/whp_facilitator_login',{
+     method:'POST',headers:{apikey:key,'Content-Type':'application/json',Accept:'application/json'},
+     body:JSON.stringify({p_code:'DIAGNOSTIC-NOT-REAL',p_pin:'0000'})
+   });
+   text=await res.text();
+ }catch(e){r.innerHTML+=box('bad','Browser could not reach Supabase','This is usually a network, VPN, proxy, firewall or DNS problem.<pre>'+esc(String(e))+'</pre>');return;}
+ const upper=String(text).toUpperCase();
+ if(upper.includes('SESSION_NOT_FOUND')){
+   r.innerHTML+=box('ok','Connection and database functions work','The browser reached Supabase and successfully called <code>whp_facilitator_login</code>. Return to the main page and enter a new PIN.');return;
+ }
+ if(res.status===404 || upper.includes('PGRST202') || upper.includes('COULD NOT FIND THE FUNCTION')){
+   r.innerHTML+=box('bad','Retrospective database functions are missing','Run the entire <code>supabase-setup.sql</code> in this exact project, then run <code>NOTIFY pgrst, \'reload schema\';</code>.<pre>HTTP '+res.status+'\n'+esc(text)+'</pre>');return;
+ }
+ if(res.status===401 || res.status===403){
+   r.innerHTML+=box('bad','URL and key do not authenticate together','The deployed URL and key are probably from different projects, the key was revoked, or a secret key was used.<pre>HTTP '+res.status+'\n'+esc(text)+'</pre>');return;
+ }
+ r.innerHTML+=box('warn','Supabase responded unexpectedly','Copy this complete result when asking for help.<pre>HTTP '+res.status+'\n'+esc(text)+'</pre>');
+}
+runTests();
+</script></body></html>
