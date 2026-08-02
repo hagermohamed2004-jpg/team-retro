@@ -318,8 +318,20 @@
     wheelState.timerId = setTimeout(() => {
       wheelState.timerId = null;
       wheelState.spun = false;
-      wheelState.revealed = true;
-      syncWheelMulti();
+wheelState.revealed = true;
+wheelState.formVisible = true;
+syncWheelMulti();
+
+requestAnimationFrame(() => {
+  const form = document.getElementById('shoutout-form');
+
+  if (form) {
+    form.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+});
     }, wait);
   }
 
