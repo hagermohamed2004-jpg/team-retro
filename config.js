@@ -45,12 +45,39 @@ window.WHP_CONFIG = {
     const response = await originalFetch(...args);
     const finalUrl = String(args?.[0]?.url || args?.[0] || '');
     if (/\/rest\/v1\/rpc\/(whp_join|whp_get_state|whp_participant_action)(?:\?|$)/i.test(finalUrl)) {
-      response.clone().json().then(payload => {
+      try {
+        const payload = await response.clone().json();
+        let responsePayloadChanged = false;
+
+        // Keep a one-person assignment in the same array shape used by the
+        // two-person flow. Without this, polling alternates between "id" and
+        // ["id"], so online.js believes the participant view changed and
+        // replaces the textarea while the participant is typing.
+        const participantId = String(payload?.participant_id || '');
+        const assignments = payload?.state?.assignments;
+        if (participantId && assignments && typeof assignments === 'object') {
+          const current = assignments[participantId];
+          if (current != null && current !== '' && !Array.isArray(current)) {
+            assignments[participantId] = [String(current)];
+            responsePayloadChanged = true;
+          }
+        }
+
         window.__whpPrivatePayload = payload;
         window.dispatchEvent(new CustomEvent('whp:private-payload', {
           detail: { payload, url: finalUrl }
         }));
-      }).catch(() => {});
+
+        if (responsePayloadChanged) {
+          return new Response(JSON.stringify(payload), {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers
+          });
+        }
+      } catch (_) {
+        // Non-JSON responses and network errors are handled by online.js.
+      }
     }
     return response;
   };
@@ -71,9 +98,9 @@ window.WHP_CONFIG = {
 
   const loadFixes = async () => {
     try {
-      await appendScript('./fixes.js?v=20260803-8');
-      await appendScript('./shared-results-fix.js?v=20260803-8');
-      await appendScript('./two-shoutouts-fix.js?v=20260803-8');
+      await appendScript('./fixes.js?v=20260803-9');
+      await appendScript('./shared-results-fix.js?v=20260803-9');
+      await appendScript('./two-shoutouts-fix.js?v=20260803-9');
     } catch (error) {
       console.error('Unable to load Team Retro fixes', error);
     }

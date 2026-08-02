@@ -34,6 +34,18 @@
   const drafts = window.__whpTwoShoutoutDrafts || {};
   window.__whpTwoShoutoutDrafts = drafts;
 
+  const isShoutoutTextarea = element => Boolean(
+    element &&
+    element.matches?.('textarea[id^="shoutout-text-"], textarea#shoutout-text')
+  );
+
+  function participantIsTypingShoutout() {
+    return Boolean(
+      state?.settings?.phase === 'shoutouts' &&
+      isShoutoutTextarea(document.activeElement)
+    );
+  }
+
   function normaliseAssignment(value) {
     const raw = Array.isArray(value) ? value : (value == null || value === '' ? [] : [value]);
     const result = [];
@@ -640,14 +652,25 @@
     window.submitShoutout = submitAllPendingShoutouts;
     window.sharedShoutouts = sharedShoutoutsMulti;
 
+    // online.js may request a participant rerender when polling notices a
+    // server-state difference. Never replace an active shout-out textarea: it
+    // removes focus and interrupts the sentence being typed. This covers both
+    // the one-person and two-person versions of the form.
+    if (!window.renderParticipantHub.__whpShoutoutTypingGuard) {
+      const originalRenderParticipantHub = window.renderParticipantHub;
+      const guardedRenderParticipantHub = function (...args) {
+        if (participantIsTypingShoutout()) return;
+        return originalRenderParticipantHub.apply(this, args);
+      };
+      guardedRenderParticipantHub.__whpShoutoutTypingGuard = true;
+      window.renderParticipantHub = guardedRenderParticipantHub;
+      try { renderParticipantHub = guardedRenderParticipantHub; } catch (_) {}
+    }
+
     window.addEventListener('whp:private-payload', event => {
       setTimeout(() => {
         const repaired = repairAssignmentFromPayload(event.detail?.payload);
-        const activeElement = document.activeElement;
-        const typingShoutout = Boolean(
-          activeElement &&
-          activeElement.matches?.('textarea[id^="shoutout-text-"], textarea#shoutout-text')
-        );
+        const typingShoutout = participantIsTypingShoutout();
 
         if (
           repaired &&
